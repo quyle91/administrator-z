@@ -4,8 +4,10 @@ namespace Adminz\Admin;
 class ADMINZ_ThemeOptions extends Adminz{
 	public $setting_tab;
 
-	function __construct() {
-		add_action('admin_menu', [$this,'adminz_add_menu_page']);
+	function __construct() {		
+		if(is_user_logged_in() and "administrator" == wp_get_current_user()->roles[0]){		
+			add_action('admin_menu', [$this,'adminz_add_menu_page']);
+		}		
 	}
 	function init(){
 		

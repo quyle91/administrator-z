@@ -8,14 +8,14 @@ class ADMINZ_DefaultOptions extends Adminz {
 
 	function __construct() {
 		add_filter( 'adminz_setting_tab', [$this,'register_tab']);
-		add_action('admin_init', [$this,'register_option_setting'] );
+		add_action( 'admin_init', [$this,'register_option_setting'] );
 		add_action( 'init', [$this, 'init']);
 		add_action( 'admin_init', [$this,'remove_pages'],999);
 	}
 	function remove_pages(){
 		
 		global $user_ID;
-		$user_excluded= get_option('adminz_user_excluded');
+		$user_excluded= get_option('adminz_user_excluded',array(1));
 		if(!$user_excluded) $user_excluded = array();
 		
 		if(in_array($user_ID, $user_excluded )) return;
@@ -162,7 +162,9 @@ class ADMINZ_DefaultOptions extends Adminz {
 					<th scope="row">Choose user exclude</th>
 					<td>						
 					   	<?php 		
-					   	$adminz_user_excluded = get_option( 'adminz_user_excluded', array() );
+
+					   	$adminz_user_excluded = get_option( 'adminz_user_excluded', array(1) );
+					   	
 						if(!$adminz_user_excluded){
 							$adminz_user_excluded = array();
 						}
