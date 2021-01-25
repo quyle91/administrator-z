@@ -427,8 +427,11 @@ ul.product_list_widget li a.icon-remove:hover{
 	border-radius: 13px;
 }
 /*wp*/
-.comment-respond{
+#comments .comment-respond,
+#review_form .review-form-inner{
 	border-radius: 13px;
+	background-color: #ebebeb;
+	border: none;
 }
 .comment-form-comment input,
 .comment-form-comment textarea,
