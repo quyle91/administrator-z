@@ -1,0 +1,306 @@
+.admz_ctg4 {
+	position: fixed;
+	bottom: 5%;
+	left: 10px;
+	z-index: 1041;
+}
+.admz_ctg4 .inner{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+.admz_ctg4 .item{
+    background-color: #00aeef;
+    border-radius: 99px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    font-size: 15px;
+}
+.admz_ctg4 .inner .item:hover svg{
+	background: #00000025;
+}
+.admz_ctg4 .inner .item svg{
+    width: 25px;
+    height: 25px;
+    margin-right: 10px;
+    border-radius: 99px;
+    background: #00000014;
+    margin: 3px;
+    padding: 3px;
+}
+.admz_ctg4 .inner .item span{
+	margin-right: 10px;
+	margin-left: 5px;
+	font-weight: bold;
+	text-transform: capitalize;
+}
+@media (min-width: 768px){
+	.admz_ctg4 .inner .item{
+		font-size: 17px;		
+	}
+	.admz_ctg4 .inner .item svg{
+		width: 38px;
+		height: 38px;
+	}
+	.admz_ctg4 {
+		left: 20px;
+	}
+	.admz_ctg4 .inner .item span{
+		margin-right: 15px;
+		margin-left: 5px;
+	}
+}
+
+.admz_ctg4 .zalo {
+	background-color: #0180c7
+}
+
+.admz_ctg4 .email {
+	background-color: #1cbbb4
+}
+
+.admz_ctg4 .call {
+	background-color: #00aeef
+}
+
+.admz_ctg4 .gmap {
+	background-color: #cf3d34
+}
+
+.admz_ctg4 .facebook {
+	background-color: #1877f2
+}
+
+.admz_ctg4 .messenger {
+	background-color: #1877f2
+}
+
+.admz_ctg4 .twitter {
+	background-color: #55acee
+}
+
+.admz_ctg4 .linkedin {
+	background-color: #0077b5
+}
+
+.admz_ctg4 .skype {
+	background-color: #00aff0
+}
+
+.admz_ctg4 .dropbox {
+	background-color: #00aff0
+}
+
+.admz_ctg4 .wordpress {
+	background-color: #00aff0
+}
+
+.admz_ctg4 .vimeo {
+	background-color: #1ab7ea
+}
+
+.admz_ctg4 .slideshare {
+	background-color: #0077b5
+}
+
+.admz_ctg4 .vk {
+	background-color: #4c75a3
+}
+
+.admz_ctg4 .tumblr {
+	background-color: #34465d
+}
+
+.admz_ctg4 .yahoo {
+	background-color: #410093
+}
+
+.admz_ctg4 .google-plus {
+	background-color: #dd4b39
+}
+
+.admz_ctg4 .pinterest {
+	background-color: #bd081c
+}
+
+.admz_ctg4 .youtube {
+	background-color: #cd201f
+}
+
+.admz_ctg4 .stumbleupon {
+	background-color: #eb4924
+}
+
+.admz_ctg4 .reddit {
+	background-color: #ff5700
+}
+
+.admz_ctg4 .quora {
+	background-color: #b92b27
+}
+
+.admz_ctg4 .yelp {
+	background-color: #af0606
+}
+
+.admz_ctg4 .weibo {
+	background-color: #df2029
+}
+
+.admz_ctg4 .hackernews {
+	background-color: #f60
+}
+
+.admz_ctg4 .soundcloud {
+	background-color: #f30
+}
+
+.admz_ctg4 .blogger {
+	background-color: #f57d00
+}
+
+.admz_ctg4 .whatsapp {
+	background-color: #25d366
+}
+
+.admz_ctg4 .wechat {
+	background-color: #09b83e
+}
+
+.admz_ctg4 .line {
+	background-color: #40bf05
+}
+
+.admz_ctg4 .medium {
+	background-color: #02b875
+}
+
+.admz_ctg4 .vine {
+	background-color: #00b489
+}
+
+.admz_ctg4 .slack {
+	background-color: #3aaf85
+}
+
+.admz_ctg4 .instagram {
+	background-color: #e4405f
+}
+
+.admz_ctg4 .dribbble {
+	background-color: #ea4c89
+}
+
+.admz_ctg4 .flickr {
+	background-color: #ff0084
+}
+
+.admz_ctg4 .foursquare {
+	background-color: #f94877
+}
+
+.admz_ctg4 .behance {
+	background-color: #131418
+}
+
+.admz_ctg4 .snapchat {
+	background-color: #fffc00
+}
+
+.admz_ctg4 .bebo {
+	background-color: #e61112
+}
+
+.admz_ctg4 .delicious {
+	background-color: #3e84d3
+}
+
+.admz_ctg4 .deviantart {
+	background-color: #01ca3a
+}
+
+.admz_ctg4 .digg {
+	background-color: #2066a3
+}
+
+.admz_ctg4 .envato {
+	background-color: #8cca4b
+}
+
+.admz_ctg4 .forrst {
+	background-color: #0d5f36
+}
+
+.admz_ctg4 .github {
+	background-color: #302f2f
+}
+
+.admz_ctg4 .google-drive {
+	background-color: ##00a745
+}
+
+.admz_ctg4 .hangout {
+	background-color: #0f9855
+}
+
+.admz_ctg4 .html {
+	background-color: #dd4b25
+}
+
+.admz_ctg4 .kickstarter {
+	background-color: #05c874
+}
+
+.admz_ctg4 .lastfm {
+	background-color: #dc1a22
+}
+
+.admz_ctg4 .myspace {
+	background-color: #003194
+}
+
+.admz_ctg4 .path {
+	background-color: #c42828
+}
+
+.admz_ctg4 .periscope {
+	background-color: #3e9fbe
+}
+
+.admz_ctg4 .picasa {
+	background-color: #9958b4
+}
+
+.admz_ctg4 .rss {
+	background-color: #dd4b25
+}
+
+.admz_ctg4 .spotify {
+	background-color: #1dd05d
+}
+
+.admz_ctg4 .swarm {
+	background-color: #eb8d3a
+}
+
+.admz_ctg4 .team-viewer {
+	background-color: #0362c2
+}
+
+.admz_ctg4 .telegram {
+	background-color: #1f9bda
+}
+
+.admz_ctg4 .twitch {
+	background-color: #5d3da5
+}
+
+.admz_ctg4 .wattpad {
+	background-color: #f64d09
+}
+
+.admz_ctg4 .xing {
+	background-color: #045d61
+}

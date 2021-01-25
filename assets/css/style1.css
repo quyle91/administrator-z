@@ -1,0 +1,352 @@
+.contactgroup_style1 .item {
+	background-color: #00aeef
+}
+
+.contactgroup_style1 .zalo {
+	background-color: #0180c7
+}
+
+.contactgroup_style1 .email {
+	background-color: #1cbbb4
+}
+
+.contactgroup_style1 .call {
+	background-color: #00aeef
+}
+
+.contactgroup_style1 .gmap {
+	background-color: #cf3d34
+}
+
+.contactgroup_style1 .facebook {
+	background-color: #1877f2
+}
+
+.contactgroup_style1 .messenger {
+	background-color: #1877f2
+}
+
+.contactgroup_style1 .twitter {
+	background-color: #55acee
+}
+
+.contactgroup_style1 .linkedin {
+	background-color: #0077b5
+}
+
+.contactgroup_style1 .skype {
+	background-color: #00aff0
+}
+
+.contactgroup_style1 .dropbox {
+	background-color: #00aff0
+}
+
+.contactgroup_style1 .wordpress {
+	background-color: #00aff0
+}
+
+.contactgroup_style1 .vimeo {
+	background-color: #1ab7ea
+}
+
+.contactgroup_style1 .slideshare {
+	background-color: #0077b5
+}
+
+.contactgroup_style1 .vk {
+	background-color: #4c75a3
+}
+
+.contactgroup_style1 .tumblr {
+	background-color: #34465d
+}
+
+.contactgroup_style1 .yahoo {
+	background-color: #410093
+}
+
+.contactgroup_style1 .google-plus {
+	background-color: #dd4b39
+}
+
+.contactgroup_style1 .pinterest {
+	background-color: #bd081c
+}
+
+.contactgroup_style1 .youtube {
+	background-color: #cd201f
+}
+
+.contactgroup_style1 .stumbleupon {
+	background-color: #eb4924
+}
+
+.contactgroup_style1 .reddit {
+	background-color: #ff5700
+}
+
+.contactgroup_style1 .quora {
+	background-color: #b92b27
+}
+
+.contactgroup_style1 .yelp {
+	background-color: #af0606
+}
+
+.contactgroup_style1 .weibo {
+	background-color: #df2029
+}
+
+.contactgroup_style1 .hackernews {
+	background-color: #f60
+}
+
+.contactgroup_style1 .soundcloud {
+	background-color: #f30
+}
+
+.contactgroup_style1 .blogger {
+	background-color: #f57d00
+}
+
+.contactgroup_style1 .whatsapp {
+	background-color: #25d366
+}
+
+.contactgroup_style1 .wechat {
+	background-color: #09b83e
+}
+
+.contactgroup_style1 .line {
+	background-color: #40bf05
+}
+
+.contactgroup_style1 .medium {
+	background-color: #02b875
+}
+
+.contactgroup_style1 .vine {
+	background-color: #00b489
+}
+
+.contactgroup_style1 .slack {
+	background-color: #3aaf85
+}
+
+.contactgroup_style1 .instagram {
+	background-color: #e4405f
+}
+
+.contactgroup_style1 .dribbble {
+	background-color: #ea4c89
+}
+
+.contactgroup_style1 .flickr {
+	background-color: #ff0084
+}
+
+.contactgroup_style1 .foursquare {
+	background-color: #f94877
+}
+
+.contactgroup_style1 .behance {
+	background-color: #131418
+}
+
+.contactgroup_style1 .snapchat {
+	background-color: #fffc00
+}
+
+.contactgroup_style1 .bebo {
+	background-color: #e61112
+}
+
+.contactgroup_style1 .delicious {
+	background-color: #3e84d3
+}
+
+.contactgroup_style1 .deviantart {
+	background-color: #01ca3a
+}
+
+.contactgroup_style1 .digg {
+	background-color: #2066a3
+}
+
+.contactgroup_style1 .envato {
+	background-color: #8cca4b
+}
+
+.contactgroup_style1 .forrst {
+	background-color: #0d5f36
+}
+
+.contactgroup_style1 .github {
+	background-color: #302f2f
+}
+
+.contactgroup_style1 .google-drive {
+	background-color: ##00a745
+}
+
+.contactgroup_style1 .hangout {
+	background-color: #0f9855
+}
+
+.contactgroup_style1 .html {
+	background-color: #dd4b25
+}
+
+.contactgroup_style1 .kickstarter {
+	background-color: #05c874
+}
+
+.contactgroup_style1 .lastfm {
+	background-color: #dc1a22
+}
+
+.contactgroup_style1 .myspace {
+	background-color: #003194
+}
+
+.contactgroup_style1 .path {
+	background-color: #c42828
+}
+
+.contactgroup_style1 .periscope {
+	background-color: #3e9fbe
+}
+
+.contactgroup_style1 .picasa {
+	background-color: #9958b4
+}
+
+.contactgroup_style1 .rss {
+	background-color: #dd4b25
+}
+
+.contactgroup_style1 .spotify {
+	background-color: #1dd05d
+}
+
+.contactgroup_style1 .swarm {
+	background-color: #eb8d3a
+}
+
+.contactgroup_style1 .team-viewer {
+	background-color: #0362c2
+}
+
+.contactgroup_style1 .telegram {
+	background-color: #1f9bda
+}
+
+.contactgroup_style1 .twitch {
+	background-color: #5d3da5
+}
+
+.contactgroup_style1 .wattpad {
+	background-color: #f64d09
+}
+
+.contactgroup_style1 .xing {
+	background-color: #045d61
+}
+
+.contactgroup_style1 {
+	display: inline-grid;
+	position: fixed;
+	bottom: calc(0% + 50px);
+	right: 0;
+	min-width: 40px;
+	text-align: center;
+	z-index: 1041;
+}
+
+.contactgroup_style1 .item {
+	transition: all .25s;
+	padding: 5px;
+	position: relative
+}
+
+.contactgroup_style1 svg {
+	width: 25px;
+	height: 25px;
+	fill: currentColor
+}
+
+.contactgroup_style1 .item:hover {
+	box-shadow: 1px 1px 17px 1px rgba(0, 0, 0, .4)
+}
+
+.contactgroup_style1 a:first-child {
+	border-top-left-radius: 16px
+}
+
+.contactgroup_style1 a:last-child {
+	border-bottom-left-radius: 16px
+}
+
+@media (max-width:767px) {
+	.contactgroup_style1 a.messenger:hover span {
+		display: none
+	}
+}
+
+@media (max-width:767px) {
+	a.zalo:hover span {
+		display: none
+	}
+}
+
+.contactgroup_style1 a span {
+	font-size: 13px;
+	color: #fff;
+	text-align: center;
+	line-height: 1.3;
+	margin-top: 54px;
+	display: block
+}
+
+.contactgroup_style1 a.zalo span {
+	margin-top: 45px
+}
+
+.contactgroup_style1 a {
+	width: 30px;
+	height: 60px;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center
+}
+@media (min-width: 768px){
+	.contactgroup_style1 a {
+		width: 40px;
+	}
+}
+.contactgroup_style1 a:hover {
+	text-decoration: none
+}
+
+@media (max-width:767px) {
+	.contactgroup_style1 {
+		bottom: 5%
+	}
+	a.call:hover span {
+		display: none
+	}
+	a.email:hover span {
+		display: none
+	}
+	.contactgroup_style1 {
+		min-width: unset
+	}
+	.contactgroup_style1 a {
+		background-position-y: 15px!important;
+		height: 50px!important
+	}
+	.contactgroup_style1 a span {
+		display: none!important
+	}
+}
