@@ -1,8 +1,8 @@
 <?php
 /*
 Plugin Name: Administrator Z
-Description: Some selected functions that are commonly used to support building websites quickly: some shortcodes integrated on UX Builder - Flatsome and Elementor, automatic updates, shutting down xmrpc.php, contact button groups, input support.
-Version: 1.2
+Description: Lots of tools for quick website setup.
+Version: 1.3
 Author: Quyle91
 Author URI: https://quyle91.github.io/
 License: GPLv2 or later
@@ -23,7 +23,7 @@ function adminz_namespace() {
 	new Adminz\Admin\ADMINZ_ContactGroup;
 	new Adminz\Admin\ADMINZ_Flatsome;
 	new Adminz\Admin\ADMINZ_Elementor;
-	new Adminz\Admin\ADMINZ_Tools;
+	new Adminz\Admin\ADMINZ_Import;
 	new Adminz\Admin\ADMINZ_OtherOptions;	
 	new Adminz\Admin\ADMINZ_Sercurity;
 	new Adminz\Admin\ADMINZ_Me;

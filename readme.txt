@@ -5,7 +5,7 @@ Donate link: http://paypal.me/quyle91
 Requires at least: 4.0
 Tested up to: 5.6
 Requires PHP: 5.6
-Stable tag: 1.2
+Stable tag: 1.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,11 +18,12 @@ Sometimes website installation gets boring with repetitive tasks, so I wrote thi
 Feature functions: 
 
 1. Auto update plugin and WP core
-2. Disable ping back/ xmlrpc.php by wordpress filter
-4. Admin login logo
-5. Contact group
-6. UX Builder support for shortcodes and element in page builder 
-7. Elementor support for page builder
+2. Disable ping back, xmlrpc.php, rest api, file editor by wordpress filter
+4. Admin login logo and hide some menu admin
+5. Contact group button
+6. Some UX Builder shortcodes are added
+7. Some Elementor widget are added
+8. Tool Import post/ product content from external url
 
 
 
@@ -33,16 +34,18 @@ For more details you can send mail with your suggestions, recommendation to quyl
 
 == Installation ==
 
-To **Install** this *Adminiztrator Z* plugin there is no any complexity. It's very simple like other plugin. Just follow the procedure described below.
-
-
-1. Upload "administrator-z.zip" to the "/wp-content/plugins/" directory.
-1. Activate the plugin through the "Administrator Z" menu in WordPress.
-1. Settings -> Administrator Z
+"When you are reading this it means you do not need to see the installation instructions."
+- Khi bạn đang đọc đến nội dung này có nghĩa là bạn ko cần xem hướng dẫn cài đặt. -
 
 == Screenshots ==
 
 == Changelog ==
+
+= 1.3 =
+* New Import post/ product tab 
+* Administrator Z menu show only administrator user role
+* sercurity disable rest api json is default enabled when plugin loaded
+* sercurity new disable file edit is default enabled when plugin loaded
 
 = 1.2 =
 * Some flatsome filter hook, action hook
