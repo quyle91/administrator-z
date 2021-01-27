@@ -5,6 +5,8 @@ use DOMDocument;
 use DOMXpath;
 use WC_Product;
 use WC_Product_Variable;
+use WC_Product_Attribute;
+use WC_Product_Variation;
 use WC_Product_Grouped;
 use WC_Product_External;
 use WC_Product_Simple;
@@ -18,8 +20,7 @@ class ADMINZ_Import extends Adminz {
     public $slug = 'adminz_import';
     function __construct() {
         add_action('admin_init', [$this, 'register_option_setting']);
-        add_filter('adminz_setting_tab', [$this, 'register_tab']);
-        add_action('wp_ajax_get_permalink', [$this, 'get_permalink']);
+        add_filter('adminz_setting_tab', [$this, 'register_tab']);        
         add_action('wp_ajax_test_single', [$this, 'test_single']);
         add_action('wp_ajax_test_category', [$this, 'test_category']);
         add_action('wp_ajax_test_product', [$this, 'test_product']);
@@ -28,12 +29,13 @@ class ADMINZ_Import extends Adminz {
         add_action('wp_ajax_run_import_single_product', [$this, 'run_import_single_product']);
         add_action('wp_ajax_run_import_category', [$this, 'run_import_category']);
     }
-    function get_permalink($id = false){
-        if(!$id){ $id = $_POST['id']; }
-        wp_send_json_success('<a target="blank" href="' . get_permalink($id) . '">View post</a>');
+    function run_import_single($link = false) {
+        if(!$link){ $link = $_POST['link']; }
+        $post_id = $this->do_import_single($link);
+        wp_send_json_success("<a target='_blank' href='".get_permalink( $post_id )."'>Complete</a>");
         wp_die();
     }
-    function run_import_single($link = false) {
+    function do_import_single($link = false){
         if(!$link){ $link = $_POST['link']; }
         $data = $this->get_single($link);        
 
@@ -53,12 +55,11 @@ class ADMINZ_Import extends Adminz {
         if(!empty($post_thumbnails) and is_array($post_thumbnails)){
             foreach ($post_thumbnails as $key => $url) {
                 $res = $this->save_images($url,$post_args['post_title']."-".$key);
-                
                 // set first image for thumbnail
                 if($key ==0){
                     set_post_thumbnail( $post_id, $res['attach_id'] );  
                 }
-                $data['post_content'] = str_replace($url, $res['url'], $data['post_content']);
+                $data['post_content'] = $this->replace_img_content($url,$res['attach_id'],$data['post_content']);
             }
         }        
         
@@ -66,15 +67,20 @@ class ADMINZ_Import extends Adminz {
             'ID'           => $post_id,
             'post_content' => $this->fix_content($data['post_content'])
         );
+        
         wp_update_post( $content_replaced );
-
-        wp_send_json_success($post_id);
+        return $post_id;
+    }
+    function run_import_single_product($link = false){
+        if(!$link){ $link = $_POST['link']; }
+        $post_id = $this->do_import_single_product($link);
+        wp_send_json_success("<a target='_blank' href='".get_permalink( $post_id )."'>Complete</a>");
         wp_die();
     }
-    function run_import_single_product($link = false) {
+    function do_import_single_product($link = false) {
         if(!$link){ $link = $_POST['link']; }
         $data = $this->get_product($link);
-
+        // check produduct type and set product type data
         switch ($data['product_type']) {
             case 'external':
                 $product  = new WC_Product_External();
@@ -82,28 +88,98 @@ class ADMINZ_Import extends Adminz {
                 break;
             case 'variable':
                 $product  = new WC_Product_Variable();
+                $data_variables = $data['product_type_data'];
+                print_r($data_variables);
+                die;
+                /*
+                if(!empty($data_variables)){
+                    $att_var = [];
+                    foreach ($data_variables as $key => $data_variable) {
+                        $attribute = new WC_Product_Attribute();
+                        $attribute->set_name("tuy-chon");
+                        $attribute->set_options(array_values((array)$data_variable->attributes)[0]);
+                        $attribute->set_visible( 1 );
+                        $attribute->set_variation( 1 );
+                    }
+                    
+                }*/
+                // gọi adminz_import_product_variations_form_select lấy thêm tên của các attribute
+                // foreach attribute
+                    //========== item
+                    $attribute1 = new WC_Product_Attribute();                
+                    $attribute1->set_name( 'Màu sắc' );
+                    $attribute1->set_options( array(
+                        'Màu xanh',
+                        'Màu vàng'
+                    ) );                    
+                    $attribute1->set_visible( 1 );
+                    $attribute1->set_variation( 1 );                
+
+                    //========== item
+                    $attribute2 = new WC_Product_Attribute();                
+                    $attribute2->set_name( 'Kích thước' );
+                    $attribute2->set_options( array(
+                        'To',
+                        'Nhỏ'
+                    ) );
+                    $attribute2->set_variation( 1 );
+
+
+                $product->set_attributes([$attribute1,$attribute2]);
+                $id = $product->save();
+
+                // foreach variable 
+                    //========== item
+                    $variation = new WC_Product_Variation();
+                    $variation->set_regular_price(10);
+                    $variation->set_sale_price(5);
+                    $variation->set_parent_id($id);
+                    $variation->set_attributes(array(
+                        'mau-sac' => 'Màu xanh',
+                        'kich-thuoc'=> 'To'                   
+                    ));
+                    $variation->save();
+
+                    //========== item
+                    $variation = new WC_Product_Variation();
+                    $variation->set_regular_price(12);
+                    $variation->set_sale_price(10);
+                    $variation->set_parent_id($id);
+                    $variation->set_attributes(array(
+                        'mau-sac' => 'Màu vàng',
+                        'kich-thuoc' =>'To'                   
+                    ));
+                    $variation->save();
+
+                    //========== item
+                    $variation = new WC_Product_Variation();
+                    $variation->set_regular_price(12);
+                    $variation->set_sale_price(10);
+                    $variation->set_parent_id($id);
+                    $variation->set_attributes(array(
+                        'mau-sac' => 'Màu vàng',
+                        'kich-thuoc' =>'Nhỏ'                   
+                    ));
+                    $variation->save();
+
+
+
                 break;
             case 'grouped':
                 $product  = new WC_Product_Grouped();
-                $data = $data['product_type_data'];
-                if(!empty($data)){
-                    foreach ($data as $key => $value) {
-                        
-
-                        $exit_product = get_posts([
-                            'post_type'  => 'product',
-                            'title' => $value['title'],
-                            'post_status' =>'publish'
-                        ]);
-                        if(count($exit_product)){
-                            $exit_product = array_shift($exit_product);
-                            // đặt sản phẩm cũ là sản phẩm con của sp hiện tại
+                $data_type = $data['product_type_data'];
+                $children = [];
+                if(!empty($data_type)){
+                    foreach ($data_type as $key => $child) {
+                        if(!$child['exits']){
+                            $child_id = $this->do_import_single_product($child['url']);
                         }else{
-                            // tạo sản phẩm mới theo link $value['url'];
-                            // đặt ID sản phẩm mới là con của sp hiện tại
+                            $child_id = $child['exits_id'];
                         }
+                        $children[] = $child_id;
                     }
                 }
+                $product->set_children($children);
                 break;
             default:
                 $product  = new WC_Product_Simple();
@@ -112,45 +188,43 @@ class ADMINZ_Import extends Adminz {
                 break;
         }
 
-        $product->set_name($data['post_title']);                      
-        $product->set_status('publish');        
-        $product->set_short_description($data['short_description']);
+        $product->set_name($data['post_title']);
+        $product->set_status('publish');
+        
 
 
 
-        $product_id = $product->save();
+        $product_id = $product->save();        
         if(!$product_id){
             wp_send_json_success('<code>Cannot import!</code>');
             wp_die();
         }
 
-        // query all image and save
+        $product->set_short_description($data['short_description']);
+
+        // thumbnail and gallery 
         $post_thumbnails = $data['post_thumbnail'];
         $gallery = [];
         if(!empty($post_thumbnails) and is_array($post_thumbnails)){
             foreach ($post_thumbnails as $key => $url) {
                 $res = $this->save_images($url,$data['post_title']."-".$key);
-                
-                // set first image for thumbnail
                 if($key ==0){
                     set_post_thumbnail( $product_id, $res['attach_id'] );  
                 }
-                $data['post_content'] = str_replace($url, $res['url'], $data['post_content']);
+                $data['post_content'] = $this->replace_img_content($url,$res['attach_id'],$data['post_content']);
                 $gallery[] = $res['attach_id'];
             }
-        }        
-        
+        }
         $content_replaced = array(
             'ID'           => $product_id,
             'post_content' => $this->fix_content($data['post_content'])
-        );
-        
+        );        
         wp_update_post( $content_replaced );      
         array_shift($gallery)  ;
         update_post_meta($product_id,'_product_image_gallery',implode(",", $gallery));
 
-        wp_send_json_success('<a target="blank" href="' . get_permalink($product_id) . '">View post</a>');
-        wp_die();
+
+        return $product_id;
     }
     function test_single() {
         $data = json_encode($this->get_single($_POST['link']));
@@ -213,7 +287,9 @@ class ADMINZ_Import extends Adminz {
                 }
             }
         }
+        $return['post_thumbnail'] = array_values(array_unique($return['post_thumbnail']));
 
+        //post content
         $content = $xpath->query("//*[contains(@class, '" . $contentclass . "')]");
         $remove_end = get_option('adminz_import_content_remove_end', 0);
         $remove_first = get_option('adminz_import_content_remove_first', 0);
@@ -287,7 +363,7 @@ class ADMINZ_Import extends Adminz {
                 }
                 break;
             case 'variable':
-                $variable_form_class = get_option( 'adminz_import_product_variations_form', 'variations_form' );
+                $variable_form_class = get_option( 'adminz_import_product_variations_json', 'variations_form' );
                 $variable_form = $xpath->query("//*[contains(@class, '".$header_class."')]//*[contains(@class, '".$variable_form_class."')]");
                 if (!is_null($variable_form)) {
                     foreach ($variable_form as $element) {
@@ -297,15 +373,28 @@ class ADMINZ_Import extends Adminz {
                 }
                 break;
             case 'grouped':
+
+                // lấy thêm tên của các attribute adminz_import_product_variations_form_select
+
                 $grouped_form_class = get_option( 'adminz_import_product_grouped_form', 'grouped_form' );
                 $grouped_form_item_class = get_option( 'adminz_import_product_grouped_form_item', 'grouped_form' );
                 $grouped_form = $xpath->query("//*[contains(@class, '".$header_class."')]//*[contains(@class, '".$grouped_form_class."')]//tr//a");
-                if (!is_null($grouped_form)) {      
+                if (!is_null($grouped_form)) {
                     foreach ($grouped_form as $element) {
-                        $return['product_type_data'][] = array(
+                        $temp= array(
                             'title'=>$element->textContent,
                             'url'=>$element->getAttribute('href'),
+                            'exits'=>false,
+                            'exits_url'=>false,
+                            'exits_id' =>false,
                         );
+                        $exit_product_id = $this->search_product($element->textContent);
+                        if($exit_product_id){
+                            $temp['exits'] = true;
+                            $temp['exits_id'] = $exit_product_id;
+                            $temp['exits_url'] = '<a target="_blank" href="'.get_permalink( $exit_product_id ).'">'.get_the_title($exit_product_id).'</a>';                            
+                        }
+                        $return['product_type_data'][] = $temp;
                     }
                 }
                 break;
@@ -368,8 +457,7 @@ class ADMINZ_Import extends Adminz {
                 }
             }
         }
-        $return['post_thumbnail'] = array_unique($return['post_thumbnail']);
-
+        $return['post_thumbnail'] = array_values(array_unique($return['post_thumbnail']));
         // product short_description        
         $excerpt_class = get_option('adminz_import_product_short_description', 'product-short-description');
         $excerpt = $xpath->query("//*[contains(@class, '".$header_class."')]//*[contains(@class, '".$excerpt_class."')]");
@@ -472,6 +560,49 @@ class ADMINZ_Import extends Adminz {
 
         return $return;
     }
+    function search_product($title){
+
+        $return = false;
+        $exit_products = get_posts([
+            'post_type'  => 'product',
+            'title' => $title,
+            'post_status' =>'publish'
+        ]);
+        if(is_array($exit_products) and !empty($exit_products)){
+            $return = $exit_products[0]->ID;
+        }        
+        return $return;
+    }
+    function replace_img_content($img_old_url,$image_new_id,$content){  
+        $doc = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $doc->loadHTML($content);
+        libxml_clear_errors();
+        $xpath = new DOMXpath($doc);
+        $imgs = $xpath->query("//img");
+
+        if (!is_null($imgs)) {
+            foreach ($imgs as $img) {
+                if ($img->getAttribute('src') == $img_old_url){
+                    $old_html = $doc->saveHTMl($img);
+                    $width = $img->getAttribute('width')? $img->getAttribute('width') : "";
+                    $height = $img->getAttribute('height')? $img->getAttribute('height') : "";
+                    $class = $img->getAttribute('class')? $img->getAttribute('class') : "";
+                    $size = 'full';
+                    if($width and $height){
+                        $size = [$width, $height];
+                    }
+                    $class = null;
+                    if($class){
+                        $class = ['class'=>$class];
+                    }
+                    $new = wp_get_attachment_image($image_new_id,$size,"",$class);
+                    $content = str_replace($old_html, $new, $content);                    
+                }
+            }
+        }
+        return $content;
+    }
     function save_images($image_url, $posttitle) {
         $file = file_get_contents($image_url);
         $postname = sanitize_title($posttitle);
@@ -493,7 +624,7 @@ class ADMINZ_Import extends Adminz {
         wp_update_attachment_metadata($attach_id, $attach_data);
 
 
-        $res['attach_id'] = $attach_id;
+        $res['attach_id'] = $attach_id;        
         return $res;
     }
     function fix_product_price($price){
@@ -519,12 +650,12 @@ class ADMINZ_Import extends Adminz {
         $content = html_entity_decode($content);
 
         // remove all link
-        if (get_option('adminz_import_content_remove_link', "") == "on"){
+        if (get_option('adminz_import_content_remove_link', "on") == "on"){
             $content = preg_replace('#<a.*?>(.*?)</a>#i', '\1', $content);
         }
         
         // remove all script tag
-        if (get_option('adminz_import_content_remove_script', "") == "on"){
+        if (get_option('adminz_import_content_remove_script', "on") == "on"){
             $content = preg_replace('#<script(.*?)>(.*?)</script>#is', '', $content);
         }        
 
@@ -548,6 +679,7 @@ class ADMINZ_Import extends Adminz {
                     $('.test_single').click(function(){
                         var link = $(this).closest("td").find("input").val();
                         if(link){
+                            $(".data_test").html("");
                             test_single(link,$(this).closest("td").find(".data_test"));
                         }else{
                             alert("Input link");
@@ -557,6 +689,7 @@ class ADMINZ_Import extends Adminz {
                     $('.run_import_single').click(function(){
                         var link = $(this).closest("td").find("input").val();
                         if(link){
+                            $(".data_test").html("");
                             run_import_single(link,$(this).closest("td").find(".data_test"));
                         }else{
                             alert("Input link");
@@ -566,6 +699,7 @@ class ADMINZ_Import extends Adminz {
                     $('.test_category').click(function(){
                         var link = $(this).closest("td").find("input").val();
                         if(link){
+                            $(".data_test").html("");
                             test_category(link,$(this).closest("td").find(".data_test"));
                         }else{
                             alert("Input link");
@@ -575,6 +709,7 @@ class ADMINZ_Import extends Adminz {
                     $('.run_import_category').click(function(){
                         var link = $(this).closest("td").find("input").val();
                         if(link){
+                            $(".data_test").html("");
                             run_import_category(link,$(this).closest("td").find(".data_test"));
                         }else{
                             alert("Input link");
@@ -584,6 +719,7 @@ class ADMINZ_Import extends Adminz {
                     $('.test_product').click(function(){
                         var link = $(this).closest("td").find("input").val();
                         if(link){
+                            $(".data_test").html("");
                             test_product(link,$(this).closest("td").find(".data_test"));
                         }else{
                             alert("Input link");
@@ -593,6 +729,7 @@ class ADMINZ_Import extends Adminz {
                     $('.test_category_product').click(function(){
                         var link = $(this).closest("td").find("input").val();
                         if(link){
+                            $(".data_test").html("");
                             test_category_product(link,$(this).closest("td").find(".data_test"));
                         }else{
                             alert("Input link");
@@ -602,6 +739,7 @@ class ADMINZ_Import extends Adminz {
                     $('.run_import_category_product').click(function(){
                         var link = $(this).closest("td").find("input").val();
                         if(link){
+                            $(".data_test").html("");
                             run_import_category_product(link,$(this).closest("td").find(".data_test"));
                         }else{
                             alert("Input link");
@@ -611,41 +749,13 @@ class ADMINZ_Import extends Adminz {
                     $('.run_import_single_product').click(function(){
                         var link = $(this).closest("td").find("input").val();
                         if(link){
+                            $(".data_test").html("");
                             run_import_single_product(link,$(this).closest("td").find(".data_test"));
                         }else{
                             alert("Input link");
                         }                           
                         return false;
-                    })  
-                    function show_link(id){
-                        alert(id);
-                        // var tmp = null;
-                        // $.ajax({
-                        //     type : "post",
-                        //     dataType : "json",
-                        //     url : '<?php echo admin_url('admin-ajax.php'); ?>',
-                        //     data : {
-                        //         action: "get_permalink",
-                        //         id : id
-                        //     },
-                        //     context: this,
-                        //     beforeSend: function(){
-                        //     },
-                        //     success: function(response) {                                
-                        //         if(response.success) {
-                        //             tmnp = response.data;
-                        //         }
-                        //         else {
-                        //             alert('There is an error');
-                        //         }
-                        //     },
-                        //     error: function( jqXHR, textStatus, errorThrown ){
-                                
-                        //         console.log( 'Administrator Z: The following error occured: ' + textStatus, errorThrown );
-                        //     }
-                        // })
-                        // return tmp;
-                    };
+                    }) 
                     function test_single(link,output){
                         $.ajax({
                             type : "post",
@@ -663,7 +773,8 @@ class ADMINZ_Import extends Adminz {
                             success: function(response) {                                       
                                 
                                 if(response.success) {                                          
-                                    var data_test = JSON.parse(response.data);                                  
+                                    var data_test = JSON.parse(response.data);    
+                                    console.log(data_test);
                                     var html_test = "";
                                     html_test += "<div style='padding: 10px; background-color: white;'>"; 
 
@@ -735,7 +846,7 @@ class ADMINZ_Import extends Adminz {
                                 else {
                                     alert('There is an error');
                                 }
-                            }
+                            },
                             error: function( jqXHR, textStatus, errorThrown ){
                                 
                                 console.log( 'Administrator Z: The following error occured: ' + textStatus, errorThrown );
@@ -799,7 +910,7 @@ class ADMINZ_Import extends Adminz {
                                     html_test += "<div style='padding: 10px; background-color: white;'>";
                                     html_test +='<table>';
                                     for (var i = 0; i < data_test.length; i++) {                                            
-                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
+                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="_blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
                                     }                                       
                                     html_test +='</table>';
                                     html_test +="</div>";
@@ -837,7 +948,7 @@ class ADMINZ_Import extends Adminz {
                                     html_test += "<div style='padding: 10px; background-color: white;'>";
                                     html_test +='<table>';
                                     for (var i = 0; i < data_test.length; i++) {                                            
-                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
+                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="_blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
                                     }                                       
                                     html_test +='</table>';
                                     html_test +="</div>";                                       
@@ -875,15 +986,17 @@ class ADMINZ_Import extends Adminz {
                                 var html_run = '<div class="notice notice-alt notice-warning updating-message"><p aria-label="Checking...">Checking...</p></div>';
                                 output.html(html_run);
                             },
-                            success: function(response) {                                       
-                                
-                                if(response.success) {                                          
-                                    var data_test = JSON.parse(response.data);                                    
+                            success: function(response) {
+                                if(response.success) {
+                                    var data_test = JSON.parse(response.data);
+                                    console.log(data_test);
                                     var html_test = "";
                                     html_test += "<div style='padding: 10px; background-color: white;'>"; 
+
                                     // thumbnail
                                     html_test +="<code>Thumbnail</code>";
                                     html_test +="<div>";
+                                    
                                     if(data_test.post_thumbnail){
                                         for (var i = 0; i < data_test.post_thumbnail.length; i++) {
                                             if(i==0){
@@ -935,7 +1048,8 @@ class ADMINZ_Import extends Adminz {
                                                 var attr_image = '<img width="50px" src="'+data_test.product_type_data[i].image.url+'"/>';
                                                 var attr_name = Object.values(data_test.product_type_data[i].attributes);
                                                 var attr_price = data_test.product_type_data[i].display_price;
-                                                html_test+='<tr> <td>'+attr_image+'</td> <td>'+attr_name+'</td> <td>'+attr_price+'</td> </tr>';
+                                                var attr_price_regular_sale = data_test.product_type_data[i].display_regular_price;
+                                                html_test+='<tr> <td>'+attr_image+'</td> <td>'+attr_name+'</td> <td>'+attr_price+'</td><td><del>'+attr_price_regular_sale+'</del></td> </tr>';
                                             }
                                             html_test +='</table>';
                                         }
@@ -944,7 +1058,8 @@ class ADMINZ_Import extends Adminz {
                                         if(data_test.product_type_data.length){
                                             html_test+= '<table>';
                                             for (var i = 0; i < data_test.product_type_data.length; i++) {
-                                                html_test += '<tr><td><a target="blank" href="'+data_test.product_type_data[i].url+'">'+data_test.product_type_data[i].title+'</a></td></tr>';
+                                                var exit_product_url = (data_test.product_type_data[i].exits_url)? data_test.product_type_data[i].exits_url : "will be import at same at";
+                                                html_test += '<tr><td><a target="_blank" href="'+data_test.product_type_data[i].url+'">'+data_test.product_type_data[i].title+'</a></td><td>'+data_test.product_type_data[i].exits+'</td><td>'+exit_product_url+'</td></tr>';
                                             }
                                             html_test +='</table>';
                                         }
@@ -996,7 +1111,7 @@ class ADMINZ_Import extends Adminz {
                                     html_test += "<div style='padding: 10px; background-color: white;'>";
                                     html_test +='<table>';
                                     for (var i = 0; i < data_test.length; i++) {                                            
-                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
+                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="_blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
                                     }                                       
                                     html_test +='</table>';
                                     html_test +="</div>";
@@ -1034,7 +1149,7 @@ class ADMINZ_Import extends Adminz {
                                     html_test += "<div style='padding: 10px; background-color: white;'>";
                                     html_test +='<table>';
                                     for (var i = 0; i < data_test.length; i++) {                                            
-                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
+                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="_blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
                                     }                                       
                                     html_test +='</table>';
                                     html_test +="</div>";
@@ -1139,7 +1254,7 @@ class ADMINZ_Import extends Adminz {
         <?php echo $this->tool_script(); ?>
             <table class="form-table">
                 <tr valign="top">
-                    <th><h3>Customize class check</h3></th>
+                    <th><h3>CSS classses check</h3></th>
                     <td></td>
                 </tr>
                 <tr valign="top">                   
@@ -1207,8 +1322,12 @@ class ADMINZ_Import extends Adminz {
                             <code>Single add to cart button</code>
                         </p>
                         <p>
-                            <input type="text" name="adminz_import_product_variations_form" placeholder='variations_form' value="<?php echo get_option('adminz_import_product_variations_form', 'variations_form'); ?>" />
-                            <code>Variations form</code>
+                            <input type="text" name="adminz_import_product_variations_json" placeholder='variations_form' value="<?php echo get_option('adminz_import_product_variations_json', 'variations_form'); ?>" />
+                            <code>Variations json data</code>
+                        </p>
+                        <p>
+                            <input type="text" name="adminz_import_product_variations_form_select" placeholder='variations' value="<?php echo get_option('adminz_import_product_variations_form_select', 'variations'); ?>" />
+                            <code>Variations form select</code>
                         </p>
                         <p>
                             <input type="text" name="adminz_import_product_grouped_form" placeholder='grouped_form' value="<?php echo get_option('adminz_import_product_grouped_form', 'grouped_form'); ?>" />
@@ -1254,6 +1373,11 @@ class ADMINZ_Import extends Adminz {
                         Content Fix
                     </th>
                     <td>
+                        <label>
+                            <input type="checkbox" disabled checked  name="adminz_import_content_auto_save_image"/>
+                            Auto save images to library
+                        </label>
+                        <br>
                         <label>
                             <input type="checkbox" <?php echo get_option('adminz_import_content_remove_link','on') == 'on' ? 'checked' : ''; ?>  name="adminz_import_content_remove_link"/>
                             Remove all link
@@ -1303,7 +1427,7 @@ class ADMINZ_Import extends Adminz {
                     <td>
                         <p>
                             <input type="number" name="adminz_import_content_product_decimal_seprator" placeholder='0' value="<?php echo get_option('adminz_import_content_product_decimal_seprator', 0); ?>" />
-                            <code>Remove product price decimal separator from <b>END</b></code>
+                            <code>Product price remove decimal separator from <b>END</b></code>
                         </p>
                     </td>
                 </tr>
@@ -1345,13 +1469,14 @@ class ADMINZ_Import extends Adminz {
         register_setting($this->options_group, 'adminz_import_product_short_description');
         register_setting($this->options_group, 'adminz_import_product_content');
         register_setting($this->options_group, 'adminz_import_product_single_add_to_cart_button');
-        register_setting($this->options_group, 'adminz_import_product_variations_form');
+        register_setting($this->options_group, 'adminz_import_product_variations_json');
+        register_setting($this->options_group, 'adminz_import_product_variations_form_select');
         register_setting($this->options_group, 'adminz_import_product_grouped_form');
 
         register_setting($this->options_group, 'adminz_import_category_product_wrapper');
         register_setting($this->options_group, 'adminz_import_category_product_item');
 
-
+        register_setting($this->options_group, 'adminz_import_content_auto_save_image');
         register_setting($this->options_group, 'adminz_import_content_remove_link');
         register_setting($this->options_group, 'adminz_import_content_remove_script');
         register_setting($this->options_group, 'adminz_import_content_remove_first');

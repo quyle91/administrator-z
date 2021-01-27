@@ -458,3 +458,15 @@ blockquote::after{
     color: var(--primary-color);
     border-radius: 5px;
 }
+.widget_price_filter .price_slider_amount .button:hover{
+	background-color: var(--primary-color);
+	color: white;
+}
+.widget_price_filter .price_slider_amount .button{
+	opacity: 1;
+	background-color: #dadada;
+	color: #717171;
+}
+.widget_price_filter .ui-slider .ui-slider-handle{
+	background-color: #bdbdbd;
+}
