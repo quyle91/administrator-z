@@ -426,6 +426,22 @@ ul.product_list_widget li a.icon-remove:hover{
 .checkout .has-border{
 	border-radius: 13px;
 }
+.widget-upsell{
+	padding: 10px;
+}
+.widget_price_filter .price_slider_amount .button:hover{
+	background-color: var(--primary-color);
+	color: white;
+}
+.widget_price_filter .price_slider_amount .button{
+	opacity: 1;
+	background-color: #dadada;
+	color: #717171;
+}
+.widget_price_filter .ui-slider .ui-slider-handle{
+	background-color: #bdbdbd;
+}
+
 /*wp*/
 #comments .comment-respond,
 #review_form .review-form-inner{
@@ -457,16 +473,4 @@ blockquote::after{
     background: white;
     color: var(--primary-color);
     border-radius: 5px;
-}
-.widget_price_filter .price_slider_amount .button:hover{
-	background-color: var(--primary-color);
-	color: white;
-}
-.widget_price_filter .price_slider_amount .button{
-	opacity: 1;
-	background-color: #dadada;
-	color: #717171;
-}
-.widget_price_filter .ui-slider .ui-slider-handle{
-	background-color: #bdbdbd;
 }

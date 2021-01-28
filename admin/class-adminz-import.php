@@ -29,12 +29,6 @@ class ADMINZ_Import extends Adminz {
         add_action('wp_ajax_run_import_single_product', [$this, 'run_import_single_product']);
         add_action('wp_ajax_run_import_category', [$this, 'run_import_category']);
     }
-    function run_import_single($link = false) {
-        if(!$link){ $link = $_POST['link']; }
-        $post_id = $this->do_import_single($link);
-        wp_send_json_success("<a target='_blank' href='".get_permalink( $post_id )."'>Complete</a>");
-        wp_die();
-    }
     function do_import_single($link = false){
         if(!$link){ $link = $_POST['link']; }
         $data = $this->get_single($link);        
@@ -71,12 +65,6 @@ class ADMINZ_Import extends Adminz {
         wp_update_post( $content_replaced );
         return $post_id;
     }
-    function run_import_single_product($link = false){
-        if(!$link){ $link = $_POST['link']; }
-        $post_id = $this->do_import_single_product($link);
-        wp_send_json_success("<a target='_blank' href='".get_permalink( $post_id )."'>Complete</a>");
-        wp_die();
-    }
     function do_import_single_product($link = false) {
         if(!$link){ $link = $_POST['link']; }
         $data = $this->get_product($link);
@@ -85,84 +73,58 @@ class ADMINZ_Import extends Adminz {
             case 'external':
                 $product  = new WC_Product_External();
                 $product->set_product_url($data['product_type_data']);
+                $product->set_regular_price($data['_price']);
+                $product->set_sale_price($data['_sale_price']);
                 break;
             case 'variable':
                 $product  = new WC_Product_Variable();
-                $data_variables = $data['product_type_data'];
-                print_r($data_variables);
-                die;
-                /*
-                if(!empty($data_variables)){
-                    $att_var = [];
-                    foreach ($data_variables as $key => $data_variable) {
-                        $attribute = new WC_Product_Attribute();
-                        $attribute->set_name("tuy-chon");
-                        $attribute->set_options(array_values((array)$data_variable->attributes)[0]);
+                $variations_list = $data['variations_list'];
+                $variations_data = $data['product_type_data'];
+                $default_attribute = $data['default_attribute'];
+
+                // attribute
+                $attr_array = [];
+                if (!empty($variations_list) and is_array($variations_list)){
+                    
+                    foreach ($variations_list as $key => $value) {
+                        $attribute = new WC_Product_Attribute();                
+                        $attribute->set_name( $value['attr_name'] );
+                        if(!empty($value['attr_options']) and is_array($value['attr_options'])){
+                            $option_arr = [];
+                            foreach ($value['attr_options'] as $key => $value) {
+                                $option_arr[] = $value;
+                            }
+                            $attribute->set_options($option_arr ); 
+                        }
+                                           
                         $attribute->set_visible( 1 );
                         $attribute->set_variation( 1 );
+                        $attr_array[] = $attribute;
                     }
-                    
-                }*/
-                // gọi adminz_import_product_variations_form_select lấy thêm tên của các attribute
-                // foreach attribute
-                    //========== item
-                    $attribute1 = new WC_Product_Attribute();                
-                    $attribute1->set_name( 'Màu sắc' );
-                    $attribute1->set_options( array(
-                        'Màu xanh',
-                        'Màu vàng'
-                    ) );                    
-                    $attribute1->set_visible( 1 );
-                    $attribute1->set_variation( 1 );                
+                }
+                $product->set_attributes($attr_array);
+                $product->set_default_attributes($default_attribute);
 
-                    //========== item
-                    $attribute2 = new WC_Product_Attribute();                
-                    $attribute2->set_name( 'Kích thước' );
-                    $attribute2->set_options( array(
-                        'To',
-                        'Nhỏ'
-                    ) );
-                    $attribute2->set_variation( 1 );
-
-
-                $product->set_attributes([$attribute1,$attribute2]);
-                $id = $product->save();
-
-                // foreach variable 
-                    //========== item
-                    $variation = new WC_Product_Variation();
-                    $variation->set_regular_price(10);
-                    $variation->set_sale_price(5);
-                    $variation->set_parent_id($id);
-                    $variation->set_attributes(array(
-                        'mau-sac' => 'Màu xanh',
-                        'kich-thuoc'=> 'To'                   
-                    ));
-                    $variation->save();
-
-                    //========== item
-                    $variation = new WC_Product_Variation();
-                    $variation->set_regular_price(12);
-                    $variation->set_sale_price(10);
-                    $variation->set_parent_id($id);
-                    $variation->set_attributes(array(
-                        'mau-sac' => 'Màu vàng',
-                        'kich-thuoc' =>'To'                   
-                    ));
-                    $variation->save();
-
-                    //========== item
-                    $variation = new WC_Product_Variation();
-                    $variation->set_regular_price(12);
-                    $variation->set_sale_price(10);
-                    $variation->set_parent_id($id);
-                    $variation->set_attributes(array(
-                        'mau-sac' => 'Màu vàng',
-                        'kich-thuoc' =>'Nhỏ'                   
-                    ));
-                    $variation->save();
-
-
+                // variations
+                $product_id = $product->save();
+                if(!empty($variations_data) and is_array($variations_data)){
+                    foreach ($variations_data as $key => $value) {                        
+                        $set_attrs = (array)$value->attributes;
+                        $temp_set_attrs = [];
+                        if(is_array($set_attrs) and !empty($set_attrs)){
+                            foreach ($set_attrs as $key => $attr) {        
+                                $key = str_replace("attribute_", "", $key);
+                                $temp_set_attrs[$key] = $attr;
+                            } 
+                        }                                              
+                        $variation = new WC_Product_Variation();
+                        $variation->set_regular_price($value->display_regular_price);
+                        $variation->set_sale_price($value->display_price);
+                        $variation->set_parent_id($product_id);
+                        $variation->set_attributes($temp_set_attrs);
+                        $variation->save();
+                    }
+                }               
 
                 break;
             case 'grouped':
@@ -180,6 +142,7 @@ class ADMINZ_Import extends Adminz {
                     }
                 }
                 $product->set_children($children);
+                $product->sync($product);
                 break;
             default:
                 $product  = new WC_Product_Simple();
@@ -190,17 +153,10 @@ class ADMINZ_Import extends Adminz {
 
         $product->set_name($data['post_title']);
         $product->set_status('publish');
-        
-
-
-
-        $product_id = $product->save();        
-        if(!$product_id){
-            wp_send_json_success('<code>Cannot import!</code>');
-            wp_die();
-        }
-
         $product->set_short_description($data['short_description']);
+
+        $product_id = $product->save();
+                
 
         // thumbnail and gallery 
         $post_thumbnails = $data['post_thumbnail'];
@@ -222,27 +178,20 @@ class ADMINZ_Import extends Adminz {
         wp_update_post( $content_replaced );      
         array_shift($gallery)  ;
         update_post_meta($product_id,'_product_image_gallery',implode(",", $gallery));
-
-
+        $product_id = $product->save();
+        if(!$product_id){
+            wp_send_json_success('<code>Cannot import!</code>');
+            wp_die();
+        }
         return $product_id;
     }
-    function test_single() {
-        $data = json_encode($this->get_single($_POST['link']));
-        //endcheck
-        $return = "";
-        if (!empty($data) and is_array($data)){
-            foreach ($data as $key => $value){
-                $return .= '<div>' . $key . ": " . $value . '</div>';
-            }
-        }
-        wp_send_json_success($data);
-        wp_die();
-    } 
     function get_single($link){
+        $request  = wp_remote_get( $link );
+        $html = wp_remote_retrieve_body( $request );
+        if (!('OK' !== wp_remote_retrieve_response_message( $html ) OR 200 !== wp_remote_retrieve_response_code( $html ) )){
+                return false;
+            }
         $return = [];
-
-        $html = wp_remote_get($link) ['body'];
-        $html = mb_convert_encoding($html, 'HTML-ENTITIES', "UTF-8");
         //start check
         $doc = new DOMDocument();
         libxml_use_internal_errors(true);
@@ -304,24 +253,14 @@ class ADMINZ_Import extends Adminz {
             }
         }     
         return $return;
-    }  
-    function test_product() {
-        $data = json_encode($this->get_product($_POST['link']));
-        //endcheck
-        $return = "";
-        if (!empty($data) and is_array($data)){
-            foreach ($data as $key => $value){
-                $return .= '<div>' . $key . ": " . $value . '</div>';
-            }
-        }
-        wp_send_json_success($data);
-        wp_die();
-    }
+    } 
     function get_product($link){
+        $request  = wp_remote_get( $link );
+        $html = wp_remote_retrieve_body( $request );
+        if (!('OK' !== wp_remote_retrieve_response_message( $html ) OR 200 !== wp_remote_retrieve_response_code( $html ) )){
+                return false;
+            }
         $return = [];
-
-        $html = wp_remote_get($link) ['body'];
-        $html = mb_convert_encoding($html, 'HTML-ENTITIES', "UTF-8");
         //start check
         $doc = new DOMDocument();
         libxml_use_internal_errors(true);
@@ -368,13 +307,36 @@ class ADMINZ_Import extends Adminz {
                 if (!is_null($variable_form)) {
                     foreach ($variable_form as $element) {
                         $data_variable = $element->getAttribute('data-product_variations');
-                        $return['product_type_data'] = json_decode( $data_variable );           
+                        $return['product_type_data'] = json_decode( $data_variable );
                     }
                 }
+                // list variations 
+                $return['variations_list'] = [];
+                $return['default_attribute'] = [];
+                $variations_form_class = get_option('adminz_import_product_variations_form_select', 'variations');
+                $variations = $xpath->query("//*[contains(@class, '".$variations_form_class."')]//tr//*[contains(@class, 'label')]//label");
+                if (!is_null($variations)) {
+                    foreach ($variations as $element) {
+                        $attr_array =  [];
+                        $attr_array['attr_name']= $element->textContent;
+                        $trnode = $element->parentNode->parentNode;
+                        $attrs = $xpath->query("./*[contains(@class, 'value')]//select//option",$trnode);  
+                        $attr_options = [];      
+                        foreach ($attrs as $key => $value) {
+                            if($value->getAttribute('selected') == 'selected'){
+                                $return['default_attribute'][$element->getAttribute("for")] = $value->getAttribute("value");
+                            }
+                            if($value->getAttribute('value')){
+                                $attr_options[]= $value->getAttribute('value');
+                            }
+                        }
+                        $attr_array['attr_options'] = $attr_options;
+                        $return['variations_list'][] = $attr_array;
+                    }
+                }
+                //variations_list
                 break;
-            case 'grouped':
-
-                // lấy thêm tên của các attribute adminz_import_product_variations_form_select
+            case 'grouped':               
 
                 $grouped_form_class = get_option( 'adminz_import_product_grouped_form', 'grouped_form' );
                 $grouped_form_item_class = get_option( 'adminz_import_product_grouped_form_item', 'grouped_form' );
@@ -430,10 +392,8 @@ class ADMINZ_Import extends Adminz {
         if(isset($price_arr[0])){
             $return['_price'] = $price_arr[0];
         }
-        if($return['product_type'] == 'simple'){            
-            if(isset($price_arr[1])){
-                $return['_sale_price'] = $price_arr[1];
-            }
+        if(isset($price_arr[1])){
+            $return['_sale_price'] = $price_arr[1];
         }
 
         // get entry image as first array
@@ -488,15 +448,13 @@ class ADMINZ_Import extends Adminz {
         }
         return $return;
     }
-    function test_category() {
-        $data = json_encode($this->get_category($_POST['link']));
-        wp_send_json_success($data);
-        wp_die();
-    }
     function get_category($link) {
+        $request  = wp_remote_get( $link );
+        $html = wp_remote_retrieve_body( $request );
+        if (!('OK' !== wp_remote_retrieve_response_message( $html ) OR 200 !== wp_remote_retrieve_response_code( $html ) )){
+                return false;
+            }
         $return = [];
-        $html = wp_remote_get($link) ['body'];
-        $html = mb_convert_encoding($html, 'HTML-ENTITIES', "UTF-8");
         //start check
         $doc = new DOMDocument();
         libxml_use_internal_errors(true);
@@ -505,34 +463,34 @@ class ADMINZ_Import extends Adminz {
 
         $xpath = new DOMXpath($doc);
         $blog_wrapper_class = get_option('adminz_import_category_wrapper', 'blog-wrapper');
-        $post_item_class = get_option('adminz_import_category_post_item', 'post-item');;
+        $post_item_class = get_option('adminz_import_category_post_item', 'post-item');
+        $post_item_title_class = get_option('adminz_import_category_post_item_title', 'post-title');
 
-        $posts = $xpath->query("//*[contains(@class, '" . $blog_wrapper_class . "')]//*[contains(@class, '" . $post_item_class . "')]");
-        
-        if (!is_null($posts)) {
-            foreach ($posts as $key => $n) {
-                //preg_replace(array('/\s{2,}/', '/[\t\n]/'), ' ', $n->textContent)
-                $return[$key]['post_title'] = $n->textContent;
-
-                $url = $n->getElementsByTagName('a')->item(0);                
+        $titles = $xpath->query("//*[contains(@class, '" . $blog_wrapper_class . "')]//*[contains(@class, '" . $post_item_class . "')]//*[contains(@class, '" . $post_item_title_class . "')]");
+        if (!is_null($titles)) {
+            foreach ($titles as $key => $n) {
+               $return[$key]['post_title'] = $n->textContent;
+            }
+        }
+        $links = $xpath->query("//*[contains(@class, '" . $blog_wrapper_class . "')]//*[contains(@class, '" . $post_item_class . "')]"); 
+        if (!is_null($links)) {
+            foreach ($links as $key => $n) {
+                $url = $n->getElementsByTagName('a')->item(0);
                 if (!is_null($url)) {
-                    $return[$key]['post_url'] = $this->fix_url($url->getAttribute('href'),$link);
+                    $return[$key]['post_url'] = $url->getAttribute('href');
                 }
-
             }
         }
 
         return $return;
     }
-    function test_category_product() {
-        $data = json_encode($this->get_category_product($_POST['link']));
-        wp_send_json_success($data);
-        wp_die();
-    }    
     function get_category_product($link) {
+        $request  = wp_remote_get( $link );
+        $html = wp_remote_retrieve_body( $request );
+        if (!('OK' !== wp_remote_retrieve_response_message( $html ) OR 200 !== wp_remote_retrieve_response_code( $html ) )){
+                return false;
+            }
         $return = [];
-        $html = wp_remote_get($link) ['body'];
-        $html = mb_convert_encoding($html, 'HTML-ENTITIES', "UTF-8");
         //start check
         $doc = new DOMDocument();
         libxml_use_internal_errors(true);
@@ -541,18 +499,24 @@ class ADMINZ_Import extends Adminz {
 
         $xpath = new DOMXpath($doc);
         $products_wrapper = get_option('adminz_import_category_product_wrapper', 'products');
-        $product_item_wrapper = get_option('adminz_import_category_product_item', 'product-small col');;
+        $product_item_wrapper = get_option('adminz_import_category_product_item', 'product-small col');
+        $product_item_title = get_option('adminz_import_category_product_item_title', 'product-title');
 
-        $posts = $xpath->query("//*[contains(@class, '" . $products_wrapper . "')]//*[contains(@class, '" . $product_item_wrapper . "')]");
-        
-        if (!is_null($posts)) {
-            foreach ($posts as $key => $n) {
-                //preg_replace(array('/\s{2,}/', '/[\t\n]/'), ' ', $n->textContent)
+
+        $titles = $xpath->query("//*[contains(@class, '" . $products_wrapper . "')]//*[contains(@class, '" . $product_item_wrapper . "')]//*[contains(@class, '" . $product_item_title . "')]");
+        if (!is_null($titles)) {
+            foreach ($titles as $key => $n) {
                 $return[$key]['post_title'] = $n->textContent;
 
+            }
+        }
+        $links = $xpath->query("//*[contains(@class, '" . $products_wrapper . "')]//*[contains(@class, '" . $product_item_wrapper . "')]");
+
+        if (!is_null($links)) {
+            foreach ($links as $key => $n) {
                 $url = $n->getElementsByTagName('a')->item(0);                
                 if (!is_null($url)) {
-                    $return[$key]['post_url'] = $this->fix_url($url->getAttribute('href'),$link);
+                    $return[$key]['post_url'] = $url->getAttribute('href');
                 }
 
             }
@@ -560,6 +524,52 @@ class ADMINZ_Import extends Adminz {
 
         return $return;
     }
+    function run_import_single($link = false) {
+        if(!$link){ $link = $_POST['link']; }
+        $post_id = $this->do_import_single($link);
+        wp_send_json_success("<a target='_blank' href='".get_permalink( $post_id )."'>Complete</a>");
+        wp_die();
+    }
+    function run_import_single_product($link = false){
+        if(!$link){ $link = $_POST['link']; }
+        $post_id = $this->do_import_single_product($link);
+        wp_send_json_success("<a target='_blank' href='".get_permalink( $post_id )."'>Complete</a>");
+        wp_die();
+    }
+    function test_single() {
+        $data = json_encode($this->get_single($_POST['link']));
+        //endcheck
+        $return = "";
+        if (!empty($data) and is_array($data)){
+            foreach ($data as $key => $value){
+                $return .= '<div>' . $key . ": " . $value . '</div>';
+            }
+        }
+        wp_send_json_success($data);
+        wp_die();
+    } 
+    function test_product() {
+        $data = json_encode($this->get_product($_POST['link']));
+        //endcheck
+        $return = "";
+        if (!empty($data) and is_array($data)){
+            foreach ($data as $key => $value){
+                $return .= '<div>' . $key . ": " . $value . '</div>';
+            }
+        }
+        wp_send_json_success($data);
+        wp_die();
+    }
+    function test_category() {
+        $data = json_encode($this->get_category($_POST['link']));
+        wp_send_json_success($data);
+        wp_die();
+    }
+    function test_category_product() {
+        $data = json_encode($this->get_category_product($_POST['link']));
+        wp_send_json_success($data);
+        wp_die();
+    }    
     function search_product($title){
 
         $return = false;
@@ -628,7 +638,7 @@ class ADMINZ_Import extends Adminz {
         return $res;
     }
     function fix_product_price($price){
-
+        // fix for decima
         return substr($price, 0,strlen($price)-get_option('adminz_import_content_product_decimal_seprator', 0));        
     }
     function fix_url($url, $link) {
@@ -1043,6 +1053,11 @@ class ADMINZ_Import extends Adminz {
                                     }
                                     if(data_test.product_type == 'variable'){
                                         if(data_test.product_type_data.length){
+                                            if(data_test.default_attribute){
+                                                html_test+= '</br><code>Default Attribute</code>';
+                                                html_test+= JSON.stringify(data_test.default_attribute);                                              
+                                            }
+                                            
                                             html_test+= '<table>';
                                             for (var i = 0; i < data_test.product_type_data.length; i++) {
                                                 var attr_image = '<img width="50px" src="'+data_test.product_type_data[i].image.url+'"/>';
@@ -1058,8 +1073,9 @@ class ADMINZ_Import extends Adminz {
                                         if(data_test.product_type_data.length){
                                             html_test+= '<table>';
                                             for (var i = 0; i < data_test.product_type_data.length; i++) {
+                                                var exit_product_status = (data_test.product_type_data[i].exits)? "Already exists on the system" : "--"
                                                 var exit_product_url = (data_test.product_type_data[i].exits_url)? data_test.product_type_data[i].exits_url : "will be import at same at";
-                                                html_test += '<tr><td><a target="_blank" href="'+data_test.product_type_data[i].url+'">'+data_test.product_type_data[i].title+'</a></td><td>'+data_test.product_type_data[i].exits+'</td><td>'+exit_product_url+'</td></tr>';
+                                                html_test += '<tr><td><a target="_blank" href="'+data_test.product_type_data[i].url+'">'+data_test.product_type_data[i].title+'</a></td><td>'+exit_product_status+'</td><td>'+exit_product_url+'</td></tr>';
                                             }
                                             html_test +='</table>';
                                         }
@@ -1292,7 +1308,11 @@ class ADMINZ_Import extends Adminz {
                         <p>
                             <input type="text" name="adminz_import_category_post_item" placeholder='post-item' value="<?php echo get_option('adminz_import_category_post_item', 'post-item'); ?>" />
                             <code>Post item wrapper class</code>
-                        </p>                        
+                        </p> 
+                        <p>
+                            <input type="text" name="adminz_import_category_post_item_title" placeholder='post-title' value="<?php echo get_option('adminz_import_category_post_item_title', 'post-title'); ?>" />
+                            <code>Post item title class</code>
+                        </p>                       
                     </td>
                 </tr>
                 <?php if(class_exists( 'WooCommerce' ) ){ ?>
@@ -1360,7 +1380,11 @@ class ADMINZ_Import extends Adminz {
                         <p>
                             <input type="text" name="adminz_import_category_product_item" placeholder='product-small col' value="<?php echo get_option('adminz_import_category_product_item', 'product-small col'); ?>" />
                             <code>Item wrapper class</code>
-                        </p>                        
+                        </p>  
+                        <p>
+                            <input type="text" name="adminz_import_category_product_item_title" placeholder='product-title' value="<?php echo get_option('adminz_import_category_product_item_title', 'product-title'); ?>" />
+                            <code>Title class</code>
+                        </p>                      
                     </td>
                 </tr>
                 <?php } ?>
@@ -1374,8 +1398,8 @@ class ADMINZ_Import extends Adminz {
                     </th>
                     <td>
                         <label>
-                            <input type="checkbox" disabled checked  name="adminz_import_content_auto_save_image"/>
-                            Auto save images to library
+                            <input type="checkbox" disabled checked  name=""/>
+                            Save images to library
                         </label>
                         <br>
                         <label>
@@ -1447,21 +1471,21 @@ class ADMINZ_Import extends Adminz {
         return $tabs;
     }
     function register_option_setting() {
-
         // input field save
         register_setting($this->options_group, 'adminz_import_from_post');        
         register_setting($this->options_group, 'adminz_import_from_category');        
         register_setting($this->options_group, 'adminz_import_from_product');        
         register_setting($this->options_group, 'adminz_import_from_product_category');        
-
+        //single post
         register_setting($this->options_group, 'adminz_import_post_header_title');
         register_setting($this->options_group, 'adminz_import_post_title');
         register_setting($this->options_group, 'adminz_import_post_thumbnail');
         register_setting($this->options_group, 'adminz_import_post_content');
-
+        // category
         register_setting($this->options_group, 'adminz_import_category_wrapper');
         register_setting($this->options_group, 'adminz_import_category_post_item');
-
+        register_setting($this->options_group, 'adminz_import_category_post_item_title');
+        // single product
         register_setting($this->options_group, 'adminz_import_product_header_title');
         register_setting($this->options_group, 'adminz_import_product_title');
         register_setting($this->options_group, 'adminz_import_product_price');
@@ -1472,11 +1496,12 @@ class ADMINZ_Import extends Adminz {
         register_setting($this->options_group, 'adminz_import_product_variations_json');
         register_setting($this->options_group, 'adminz_import_product_variations_form_select');
         register_setting($this->options_group, 'adminz_import_product_grouped_form');
-
+        // category product
         register_setting($this->options_group, 'adminz_import_category_product_wrapper');
         register_setting($this->options_group, 'adminz_import_category_product_item');
-
-        register_setting($this->options_group, 'adminz_import_content_auto_save_image');
+        register_setting($this->options_group, 'adminz_import_category_product_item_titles');
+        // content fix
+        //register_setting($this->options_group, 'adminz_import_content_auto_save_image');
         register_setting($this->options_group, 'adminz_import_content_remove_link');
         register_setting($this->options_group, 'adminz_import_content_remove_script');
         register_setting($this->options_group, 'adminz_import_content_remove_first');
@@ -1484,7 +1509,6 @@ class ADMINZ_Import extends Adminz {
         register_setting($this->options_group, 'adminz_import_content_replace_from');
         register_setting($this->options_group, 'adminz_import_content_replace_to');
         register_setting($this->options_group, 'adminz_import_content_product_decimal_seprator');
-        
     }
 }
 
