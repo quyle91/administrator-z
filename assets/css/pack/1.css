@@ -354,7 +354,8 @@ body input[type='button']{
 .box-push .box-text{
 	border-radius: 5px;
 }
-.nav-pagination>li>a.page-number {
+.nav-pagination>li>a.page-number,
+.nav-pagination>li>span {
     background: #ebebeb;
     border-color: transparent;
     font-weight: 400;

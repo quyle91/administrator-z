@@ -38,6 +38,7 @@ class ADMINZ_Import extends Adminz {
             'post_status'   => 'publish',
             'post_author'   => get_current_user_id()
         );
+
         $post_id = wp_insert_post( $post_args, $wp_error );
         if(!$post_id){
             wp_send_json_success('<code>Cannot import!</code>');
@@ -68,13 +69,21 @@ class ADMINZ_Import extends Adminz {
     function do_import_single_product($link = false) {
         if(!$link){ $link = $_POST['link']; }
         $data = $this->get_product($link);
+        
         // check produduct type and set product type data
         switch ($data['product_type']) {
             case 'external':
                 $product  = new WC_Product_External();
-                $product->set_product_url($data['product_type_data']);
-                $product->set_regular_price($data['_price']);
-                $product->set_sale_price($data['_sale_price']);
+                
+                if($data['product_type_data']){
+                    $product->set_product_url($data['product_type_data']);
+                }
+                if($data['_price']){
+                    $product->set_regular_price($data['_price']);
+                }
+                if($data['_sale_price']){
+                    $product->set_sale_price($data['_sale_price']);
+                }
                 break;
             case 'variable':
                 $product  = new WC_Product_Variable();
@@ -140,20 +149,27 @@ class ADMINZ_Import extends Adminz {
                         }
                         $children[] = $child_id;
                     }
-                }
-                $product->set_children($children);
-                $product->sync($product);
+                    $product->set_children($children);
+                    $product->sync($product);
+                }                
                 break;
             default:
                 $product  = new WC_Product_Simple();
-                $product->set_regular_price($data['_price']);
-                $product->set_sale_price($data['_sale_price']);
+
+                if($data['_price']){
+                    $product->set_regular_price($data['_price']);
+                }
+                if($data['_sale_price']){
+                    $product->set_sale_price($data['_sale_price']);
+                }
                 break;
         }
 
         $product->set_name($data['post_title']);
         $product->set_status('publish');
-        $product->set_short_description($data['short_description']);
+        if($data['short_description']){
+            $product->set_short_description($data['short_description']);
+        }        
 
         $product_id = $product->save();
                 
@@ -174,9 +190,9 @@ class ADMINZ_Import extends Adminz {
         $content_replaced = array(
             'ID'           => $product_id,
             'post_content' => $this->fix_content($data['post_content'])
-        );        
+        ); 
         wp_update_post( $content_replaced );      
-        array_shift($gallery)  ;
+        array_shift($gallery);
         update_post_meta($product_id,'_product_image_gallery',implode(",", $gallery));
         $product_id = $product->save();
         if(!$product_id){
@@ -186,11 +202,7 @@ class ADMINZ_Import extends Adminz {
         return $product_id;
     }
     function get_single($link){
-        $request  = wp_remote_get( $link );
-        $html = wp_remote_retrieve_body( $request );
-        if (!('OK' !== wp_remote_retrieve_response_message( $html ) OR 200 !== wp_remote_retrieve_response_code( $html ) )){
-                return false;
-            }
+        $html = $this->get_remote($link);
         $return = [];
         //start check
         $doc = new DOMDocument();
@@ -231,8 +243,8 @@ class ADMINZ_Import extends Adminz {
         $imgs = $xpath->query("//*[contains(@class, '" . $contentclass . "')]//img");
         if (!is_null($imgs)) {
             foreach ($imgs as $element) {
-                if ($element->getAttribute('src')) {
-                    $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
+                if ($element->getAttribute('src')) {                    
+                    $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);                    
                 }
             }
         }
@@ -255,11 +267,7 @@ class ADMINZ_Import extends Adminz {
         return $return;
     } 
     function get_product($link){
-        $request  = wp_remote_get( $link );
-        $html = wp_remote_retrieve_body( $request );
-        if (!('OK' !== wp_remote_retrieve_response_message( $html ) OR 200 !== wp_remote_retrieve_response_code( $html ) )){
-                return false;
-            }
+        $html = $this->get_remote($link);
         $return = [];
         //start check
         $doc = new DOMDocument();
@@ -377,7 +385,6 @@ class ADMINZ_Import extends Adminz {
         }
 
         // get price product
-        $header_class = get_option('adminz_import_product_header_title', 'product-info');
         $price_class = get_option('adminz_import_product_price','price-wrapper');
         $product_prices = get_option('adminz_import_product_prices', 'woocommerce-Price-amount');
 
@@ -389,13 +396,11 @@ class ADMINZ_Import extends Adminz {
                 $price_arr[] = $this->fix_product_price(implode("", $matches[0]));
             }
         }
-        if(isset($price_arr[0])){
-            $return['_price'] = $price_arr[0];
-        }
-        if(isset($price_arr[1])){
-            $return['_sale_price'] = $price_arr[1];
-        }
+        
+        $return['_sale_price'] = min($price_arr);
+        $return['_price'] = max($price_arr);
 
+        
         // get entry image as first array
         $image_class = get_option('adminz_import_product_thumbnail', 'woocommerce-product-gallery__image');
         $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//img");
@@ -407,16 +412,29 @@ class ADMINZ_Import extends Adminz {
             }
         }
 
-        // get all image in entry-content
-        $contentclass = get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description');
-        $imgs = $xpath->query("//*[contains(@class, '" . $contentclass . "')]//img");
-        if (!is_null($imgs)){
-            foreach ($imgs as $element){
-                if ($element->getAttribute('src')){                    
-                    $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
-                }
+        // get product gallery 
+        $gallery_class= get_option('adminz_import_product_gallery', 'product-thumbnails thumbnails');
+        $gallery_wrap = $xpath->query("//*[contains(@class, '" . $gallery_class . "')]//img");
+        if (!is_null($gallery_wrap)) {
+            foreach ($gallery_wrap as $element){
+                $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
             }
         }
+
+
+        // get all image in entry-content        
+        $include_gallery = get_option('adminz_import_content_product_auto_gallery', 'on');
+        $contentclass = get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description');
+        if($include_gallery =="on"){            
+            $imgs = $xpath->query("//*[contains(@class, '" . $contentclass . "')]//img");
+            if (!is_null($imgs)){
+                foreach ($imgs as $element){
+                    if ($element->getAttribute('src')){                    
+                        $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
+                    }
+                }
+            }
+        }        
         $return['post_thumbnail'] = array_values(array_unique($return['post_thumbnail']));
         // product short_description        
         $excerpt_class = get_option('adminz_import_product_short_description', 'product-short-description');
@@ -432,6 +450,7 @@ class ADMINZ_Import extends Adminz {
         }
 
         // product content 
+        $contentclass = get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description');
         $content = $xpath->query("//*[contains(@class, '" . $contentclass . "')]");
         $remove_end = get_option('adminz_import_content_remove_end', 0);
         $remove_first = get_option('adminz_import_content_remove_first', 0);
@@ -449,11 +468,7 @@ class ADMINZ_Import extends Adminz {
         return $return;
     }
     function get_category($link) {
-        $request  = wp_remote_get( $link );
-        $html = wp_remote_retrieve_body( $request );
-        if (!('OK' !== wp_remote_retrieve_response_message( $html ) OR 200 !== wp_remote_retrieve_response_code( $html ) )){
-                return false;
-            }
+        $html = $this->get_remote($link);
         $return = [];
         //start check
         $doc = new DOMDocument();
@@ -476,8 +491,8 @@ class ADMINZ_Import extends Adminz {
         if (!is_null($links)) {
             foreach ($links as $key => $n) {
                 $url = $n->getElementsByTagName('a')->item(0);
-                if (!is_null($url)) {
-                    $return[$key]['post_url'] = $url->getAttribute('href');
+                if (!is_null($url)) {                    
+                    $return[$key]['post_url'] = $this->fix_url($url->getAttribute('href'),$link);
                 }
             }
         }
@@ -485,19 +500,15 @@ class ADMINZ_Import extends Adminz {
         return $return;
     }
     function get_category_product($link) {
-        $request  = wp_remote_get( $link );
-        $html = wp_remote_retrieve_body( $request );
-        if (!('OK' !== wp_remote_retrieve_response_message( $html ) OR 200 !== wp_remote_retrieve_response_code( $html ) )){
-                return false;
-            }
+        $html = $this->get_remote($link);
         $return = [];
         //start check
         $doc = new DOMDocument();
         libxml_use_internal_errors(true);
         $doc->loadHTML($html);
         libxml_clear_errors();
-
         $xpath = new DOMXpath($doc);
+
         $products_wrapper = get_option('adminz_import_category_product_wrapper', 'products');
         $product_item_wrapper = get_option('adminz_import_category_product_item', 'product-small col');
         $product_item_title = get_option('adminz_import_category_product_item_title', 'product-title');
@@ -516,7 +527,7 @@ class ADMINZ_Import extends Adminz {
             foreach ($links as $key => $n) {
                 $url = $n->getElementsByTagName('a')->item(0);                
                 if (!is_null($url)) {
-                    $return[$key]['post_url'] = $url->getAttribute('href');
+                    $return[$key]['post_url'] = $this->fix_url($url->getAttribute('href'),$link);
                 }
 
             }
@@ -570,6 +581,15 @@ class ADMINZ_Import extends Adminz {
         wp_send_json_success($data);
         wp_die();
     }    
+    function get_remote($link,$format=true){
+        $request  = wp_remote_get( $link );        
+        $html = wp_remote_retrieve_body( $request );
+        if (!('OK' !== wp_remote_retrieve_response_message( $html ) OR 200 !== wp_remote_retrieve_response_code( $html ) )){
+                return false;
+            }
+        if($format){ $html = mb_convert_encoding($html, 'HTML-ENTITIES', "UTF-8"); }        
+        return $html;
+    }
     function search_product($title){
 
         $return = false;
@@ -614,7 +634,7 @@ class ADMINZ_Import extends Adminz {
         return $content;
     }
     function save_images($image_url, $posttitle) {
-        $file = file_get_contents($image_url);
+        $file = $this->get_remote($image_url,false);
         $postname = sanitize_title($posttitle);
         $im_name = "$postname.jpg";
         $res = wp_upload_bits($im_name, '', $file);
@@ -641,13 +661,26 @@ class ADMINZ_Import extends Adminz {
         // fix for decima
         return substr($price, 0,strlen($price)-get_option('adminz_import_content_product_decimal_seprator', 0));        
     }
-    function fix_url($url, $link) {
+    function fix_url($url, $link) {        
         preg_match('/(http(|s)):\/\/(.*?)\//si', $link, $output);
         $domain = $output[0];
 
+        if ($url[0] == "/" and $url[1] == "/"){
+            $url = "https:". $url;
+        }
+
         if ($url[0] == "/"){
             $url = $domain . substr($url,1);
-        }        
+        }    
+        $remove_string = get_option('adminz_import_thumbnail_url_remove_string',"");
+        if ($remove_string){
+            $url = str_replace(
+                explode("|", str_replace(["\n", "\r"], ["|", ""], $remove_string)) , 
+                '',
+                $url
+            );
+        }
+
         return $url;
     }
     function fix_content($content, $link = false) {
@@ -659,25 +692,48 @@ class ADMINZ_Import extends Adminz {
         $content = str_replace("&nbsp;", " ", $content);
         $content = html_entity_decode($content);
 
+
+        // fix missing domain in url/ href
+        $preg_arr_from = [
+            "/(src|href)=(\'|\")\/\//",
+            "/(src|href)=(\'|\")\//",
+            "/(src|href)=(\'|\")(?!http|tel|mailto)/",
+        ];
+        $preg_arr_to = [
+            "$1=$2http://",
+            "$1=$2".$domain,
+            "$1=$2".$domain."$3",
+        ];
+
         // remove all link
         if (get_option('adminz_import_content_remove_link', "on") == "on"){
-            $content = preg_replace('#<a.*?>(.*?)</a>#i', '\1', $content);
+            $preg_arr_from[] = '#<a.*?>(.*?)</a>#i';
+            $preg_arr_to[] = '\1';
         }
         
         // remove all script tag
-        if (get_option('adminz_import_content_remove_script', "on") == "on"){
-            $content = preg_replace('#<script(.*?)>(.*?)</script>#is', '', $content);
+        if (get_option('adminz_import_content_remove_script', "on") == "on"){            
+            $preg_arr_from[] = '#<script(.*?)>(.*?)</script>#is';
+            $preg_arr_to[] = '';
         }        
 
-        // fix if missing domain url
-        $content = preg_replace('/src="\/(.*)"/', 'src="' . $domain . '\1"', $content);        
+        $content = preg_replace(
+            $preg_arr_from, 
+            $preg_arr_to,
+            $content
+        );
 
         // replce strings
         $replace_from = get_option('adminz_import_content_replace_from', "");
         $replace_to = get_option('adminz_import_content_replace_to', "");
         if ($replace_from){
-            $content = str_replace(explode("|", str_replace(["\n", "\r"], ["|", ""], $replace_from)) , explode("|", str_replace(["\n", "\r"], ["|", ""], $replace_to)) , $content);
+            $content = str_replace(
+                explode("|", str_replace(["\n", "\r"], ["|", ""], $replace_from)) , 
+                explode("|", str_replace(["\n", "\r"], ["|", ""], $replace_to)) , 
+                $content
+            );
         }
+         
 
         return $content;
     }
@@ -784,39 +840,46 @@ class ADMINZ_Import extends Adminz {
                                 
                                 if(response.success) {                                          
                                     var data_test = JSON.parse(response.data);    
-                                    console.log(data_test);
+                                    console.log(data_test);                                    
                                     var html_test = "";
-                                    html_test += "<div style='padding: 10px; background-color: white;'>"; 
 
-                                    html_test +="<code>Thumbnail</code>";
-                                    html_test +="<div>";
-                                    if(data_test.post_thumbnail){
-                                        for (var i = 0; i < data_test.post_thumbnail.length; i++) {
-                                            if(i==0){
-                                                html_test +="<div><img src='"+data_test.post_thumbnail[i]+"'/></div>";
-                                            }else{
-                                                html_test +='<img style="margin-right: 10px; height: 70px; border: 5px solid silver;" src="'+data_test.post_thumbnail[i]+'"/>';
+                                    if(!data_test.post_title){
+                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Nothing found! Please check url or CSS classes check</p></div>';
+                                    }else{
+                                        html_test += "<div style='padding: 10px; background-color: white;'>"; 
+
+                                        html_test +="<code>Thumbnail</code>";
+                                        html_test +="<div>";
+                                        if(data_test.post_thumbnail){
+                                            for (var i = 0; i < data_test.post_thumbnail.length; i++) {
+                                                if(i==0){
+                                                    html_test +="<div><img src='"+data_test.post_thumbnail[i]+"'/></div>";
+                                                }else{
+                                                    html_test +='<img style="margin-right: 10px; height: 70px; border: 5px solid silver;" src="'+data_test.post_thumbnail[i]+'"/>';
+                                                }
                                             }
+                                        }else{
+                                            html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
                                         }
-                                    }else{
-                                        html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
-                                    }
-                                    html_test +="</div>";
+                                        html_test +="</div>";
 
-                                    html_test +="<code>Title:</code>";
-                                    if(data_test.post_title){
-                                        html_test +="<h1>"+data_test.post_title+"</h1>";
-                                    } else{
-                                        html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
+                                        html_test +="<code>Title:</code>";
+                                        if(data_test.post_title){
+                                            html_test +="<h1>"+data_test.post_title+"</h1>";
+                                        } else{
+                                            html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
+                                        }
+
+                                        html_test += "<code>Content:</code>";
+                                        if(data_test.post_content){
+                                            html_test +="<div>"+data_test.post_content+"</div>";
+                                        }else{
+                                            html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
+                                        }
+                                        html_test +="</div>";
                                     }
 
-                                    html_test += "<code>Content:</code>";
-                                    if(data_test.post_content){
-                                        html_test +="<div>"+data_test.post_content+"</div>";
-                                    }else{
-                                        html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
-                                    }
-                                    html_test +="</div>";
+                                    
                                     output.html(html_test);
                                 }
                                 else {
@@ -915,15 +978,21 @@ class ADMINZ_Import extends Adminz {
                             success: function(response) {
                                 
                                 if(response.success) {
-                                    var data_test = JSON.parse(response.data);
+                                    var data_test = JSON.parse(response.data);                                   
+                                    console.log(data_test);
                                     var html_test = "";
-                                    html_test += "<div style='padding: 10px; background-color: white;'>";
-                                    html_test +='<table>';
-                                    for (var i = 0; i < data_test.length; i++) {                                            
-                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="_blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
-                                    }                                       
-                                    html_test +='</table>';
-                                    html_test +="</div>";
+                                    if(!data_test.length){
+                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Nothing found! Please check url or CSS classes check</p></div>';
+                                    }else{
+                                        html_test += "<div style='padding: 10px; background-color: white;'>";
+                                        html_test +='<table>';
+                                        for (var i = 0; i < data_test.length; i++) {                                            
+                                            html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="_blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
+                                        }                                       
+                                        html_test +='</table>';
+                                        html_test +="</div>";
+                                    }
+                                    
                                     output.html(html_test);
                                 }
                                 else {
@@ -1001,98 +1070,109 @@ class ADMINZ_Import extends Adminz {
                                     var data_test = JSON.parse(response.data);
                                     console.log(data_test);
                                     var html_test = "";
-                                    html_test += "<div style='padding: 10px; background-color: white;'>"; 
 
-                                    // thumbnail
-                                    html_test +="<code>Thumbnail</code>";
-                                    html_test +="<div>";
-                                    
-                                    if(data_test.post_thumbnail){
-                                        for (var i = 0; i < data_test.post_thumbnail.length; i++) {
-                                            if(i==0){
-                                                html_test +="<div><img src='"+data_test.post_thumbnail[i]+"'/></div>";
-                                            }else{
-                                                html_test +='<img style="margin-right: 10px; height: 70px; border: 5px solid silver;" src="'+data_test.post_thumbnail[i]+'"/>';
-                                            }
-                                        }
+                                    if(!data_test.post_title){
+                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Nothing found! Please check url or CSS classes check</p></div>';
                                     }else{
-                                        html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
-                                    }
-                                    html_test +="</div>";
+                                        html_test += "<div style='padding: 10px; background-color: white;'>"; 
 
-                                    // product type
-                                    html_test +="<div>";
-                                    html_test +="<code>Product type:</code> ";
-                                    html_test +=data_test.product_type;                                    
-                                    html_test +="</div>";  
+                                        // thumbnail
+                                        html_test +="<code>Thumbnail</code>";
+                                        html_test +="<div>";
+                                        
+                                        if(data_test.post_thumbnail){
+                                            for (var i = 0; i < data_test.post_thumbnail.length; i++) {
+                                                if(i==0){
+                                                    html_test +="<div><img src='"+data_test.post_thumbnail[i]+"'/></div>";
+                                                }else{
+                                                    html_test +='<img style="margin-right: 10px; height: 70px; border: 5px solid silver;" src="'+data_test.post_thumbnail[i]+'"/>';
+                                                }
+                                            }
+                                        }else{
+                                            html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
+                                        }
+                                        html_test +="</div>";
 
-                                    // title
-                                    html_test +="<code>Title:</code>";
-                                    if(data_test.post_title){
-                                        html_test +="<h1>"+data_test.post_title+"</h1>";
-                                    } else{
-                                        html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
-                                    }
-                                    html_test +="</br>";    
+                                        // product type
+                                        html_test +="<div>";
+                                        html_test +="<code>Product type:</code> ";
+                                        html_test +=data_test.product_type;                                    
+                                        html_test +="</div>";  
 
-                                    // price 
-                                    html_test +="<code>Price:</code>";
-                                    if(data_test.product_type == 'simple'){                                        
-                                        if(data_test._price){
-                                            html_test +=" <span>Regular: "+data_test._price+"</span>";
+                                        // title
+                                        html_test +="<code>Title:</code>";
+                                        if(data_test.post_title){
+                                            html_test +="<h1>"+data_test.post_title+"</h1>";
                                         } else{
-                                            html_test +="<b style='color: white; background-color: red;'>Sale price not found</b>";
-                                        }                                        
-                                        if(data_test._sale_price){
-                                            html_test +=" <span>Sale: "+data_test._sale_price+"</span>";
-                                            
+                                            html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
                                         }
-                                    }
-                                    if(data_test.product_type == 'external'){
-                                        html_test +=data_test.product_type_data;
-                                    }
-                                    if(data_test.product_type == 'variable'){
-                                        if(data_test.product_type_data.length){
-                                            if(data_test.default_attribute){
-                                                html_test+= '</br><code>Default Attribute</code>';
-                                                html_test+= JSON.stringify(data_test.default_attribute);                                              
-                                            }
-                                            
-                                            html_test+= '<table>';
-                                            for (var i = 0; i < data_test.product_type_data.length; i++) {
-                                                var attr_image = '<img width="50px" src="'+data_test.product_type_data[i].image.url+'"/>';
-                                                var attr_name = Object.values(data_test.product_type_data[i].attributes);
-                                                var attr_price = data_test.product_type_data[i].display_price;
-                                                var attr_price_regular_sale = data_test.product_type_data[i].display_regular_price;
-                                                html_test+='<tr> <td>'+attr_image+'</td> <td>'+attr_name+'</td> <td>'+attr_price+'</td><td><del>'+attr_price_regular_sale+'</del></td> </tr>';
-                                            }
-                                            html_test +='</table>';
-                                        }
-                                    }
-                                    if(data_test.product_type == 'grouped'){
-                                        if(data_test.product_type_data.length){
-                                            html_test+= '<table>';
-                                            for (var i = 0; i < data_test.product_type_data.length; i++) {
-                                                var exit_product_status = (data_test.product_type_data[i].exits)? "Already exists on the system" : "--"
-                                                var exit_product_url = (data_test.product_type_data[i].exits_url)? data_test.product_type_data[i].exits_url : "will be import at same at";
-                                                html_test += '<tr><td><a target="_blank" href="'+data_test.product_type_data[i].url+'">'+data_test.product_type_data[i].title+'</a></td><td>'+exit_product_status+'</td><td>'+exit_product_url+'</td></tr>';
-                                            }
-                                            html_test +='</table>';
-                                        }
-                                    }
-                                    html_test +="</br>";
+                                        html_test +="</br>";    
 
-                                    // short description
-                                    html_test +="<code>Short description:</code>";
-                                    html_test +="<div>"+data_test.short_description+"</div>";
-                                    // content
-                                    html_test += "<code>Content:</code>";
-                                    if(data_test.post_content){
-                                        html_test +="<div>"+data_test.post_content+"</div>";
-                                    }else{
-                                        html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
+                                        // price 
+                                        html_test +="<code>Price:</code>";
+                                        if(data_test.product_type == 'simple'){                                        
+                                            if(data_test._price){
+                                                html_test +=" <span>Regular: "+data_test._price+"</span>";
+                                            } else{
+                                                html_test +="<b style='color: white; background-color: red;'>Sale price not found</b>";
+                                            }                                        
+                                            if(data_test._sale_price){
+                                                html_test +=" <span>Sale: "+data_test._sale_price+"</span>";
+                                                
+                                            }
+                                        }
+                                        if(data_test.product_type == 'external'){
+                                            html_test +=data_test.product_type_data;
+                                        }
+                                        if(data_test.product_type == 'variable'){
+                                            if(data_test.product_type_data.length){
+                                                if(data_test.default_attribute){
+                                                    html_test+= '</br><code>Default Attribute</code>';
+                                                    html_test+= JSON.stringify(data_test.default_attribute);                                              
+                                                }
+                                                
+                                                html_test+= '<table>';
+                                                for (var i = 0; i < data_test.product_type_data.length; i++) {
+                                                    var attr_image = '<img width="50px" src="'+data_test.product_type_data[i].image.url+'"/>';
+                                                    var attr_name = Object.values(data_test.product_type_data[i].attributes);
+                                                    var attr_price = data_test.product_type_data[i].display_price;
+                                                    var attr_price_regular_sale = data_test.product_type_data[i].display_regular_price;
+                                                    html_test+='<tr> <td>'+attr_image+'</td> <td>'+attr_name+'</td> <td>'+attr_price+'</td><td><del>'+attr_price_regular_sale+'</del></td> </tr>';
+                                                }
+                                                html_test +='</table>';
+                                            }
+                                        }
+                                        if(data_test.product_type == 'grouped'){
+                                            if(data_test.product_type_data.length){
+                                                html_test+= '<table>';
+                                                for (var i = 0; i < data_test.product_type_data.length; i++) {
+                                                    var exit_product_status = (data_test.product_type_data[i].exits)? "Already exists on the system" : "--"
+                                                    var exit_product_url = (data_test.product_type_data[i].exits_url)? data_test.product_type_data[i].exits_url : "will be import at same at";
+                                                    html_test += '<tr><td><a target="_blank" href="'+data_test.product_type_data[i].url+'">'+data_test.product_type_data[i].title+'</a></td><td>'+exit_product_status+'</td><td>'+exit_product_url+'</td></tr>';
+                                                }
+                                                html_test +='</table>';
+                                            }
+                                        }
+                                        html_test +="</br>";
+
+                                        // short description          
+                                        html_test +="<code>Short description:</code>";                          
+                                        if(data_test.short_description){                                        
+                                            html_test +="<div>"+data_test.short_description+"</div>";
+                                        }else{
+                                            html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
+                                        }
+                                        // content
+                                        html_test += "<code>Description:</code>";
+                                        if(data_test.post_content){
+                                            html_test +="<div>"+data_test.post_content+"</div>";
+                                        }else{
+                                            html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
+                                        }
+                                        html_test +="</div>";
                                     }
-                                    html_test +="</div>";
+
+                                    
                                     output.html(html_test);
                                 }
                                 else {
@@ -1123,14 +1203,20 @@ class ADMINZ_Import extends Adminz {
                                 
                                 if(response.success) {
                                     var data_test = JSON.parse(response.data);
+                                    console.log(data_test);
                                     var html_test = "";
-                                    html_test += "<div style='padding: 10px; background-color: white;'>";
-                                    html_test +='<table>';
-                                    for (var i = 0; i < data_test.length; i++) {                                            
-                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="_blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
-                                    }                                       
-                                    html_test +='</table>';
-                                    html_test +="</div>";
+                                    if(!data_test.length){
+                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Nothing found! Please check url or CSS classes check</p></div>';
+                                    }else{
+                                        html_test += "<div style='padding: 10px; background-color: white;'>";
+                                        html_test +='<table>';
+                                        for (var i = 0; i < data_test.length; i++) {                                            
+                                            html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="_blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
+                                        }                                       
+                                        html_test +='</table>';
+                                        html_test +="</div>";
+                                    }
+
                                     output.html(html_test);
                                 }
                                 else {
@@ -1280,7 +1366,7 @@ class ADMINZ_Import extends Adminz {
                     <td>
                         <p>
                             <input type="text" name="adminz_import_post_header_title" placeholder='entry-header' value="<?php echo get_option('adminz_import_post_header_title', 'entry-header'); ?>" />
-                            <code>Header title wrapper class</code>
+                            <code>Header wrapper class</code>
                         </p>
                         <p>
                             <input type="text" name="adminz_import_post_title" placeholder='entry-title' value="<?php echo get_option('adminz_import_post_title', 'entry-title'); ?>" />
@@ -1323,7 +1409,7 @@ class ADMINZ_Import extends Adminz {
                     <td>
                         <p>
                             <input type="text" name="adminz_import_product_header_title" placeholder='product-info' value="<?php echo get_option('adminz_import_product_header_title', 'product-info'); ?>" />
-                            <code>Header title wrapper class</code>
+                            <code>Header wrapper class</code>
                         </p>
                         <p>
                             <input type="text" name="adminz_import_product_title" placeholder='product-title' value="<?php echo get_option('adminz_import_product_title', 'product-title'); ?>" />
@@ -1359,12 +1445,16 @@ class ADMINZ_Import extends Adminz {
                             <code>Thumbnail wrapper class</code>
                         </p>
                         <p>
+                            <input type="text" name="adminz_import_product_gallery" placeholder='product-thumbnails thumbnails' value="<?php echo get_option('adminz_import_product_gallery', 'product-thumbnails thumbnails'); ?>" />
+                            <code>Gallery wrapper class</code>
+                        </p>
+                        <p>
                             <input type="text" name="adminz_import_product_short_description" placeholder='product-short-description' value="<?php echo get_option('adminz_import_product_short_description', 'product-short-description'); ?>" />
                             <code>Excerpt wrapper class</code>
                         </p>
                         <p>
                             <input type="text" name="adminz_import_product_content" placeholder='woocommerce-Tabs-panel--description' value="<?php echo get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description'); ?>" />
-                            <code>Content wrapper class</code>
+                            <code>Content wrapper class | Warning: Select <b>Inside</b> a description tab content for reason: default hide tab css</code>
                         </p>                        
                     </td>
                 </tr>
@@ -1428,10 +1518,10 @@ class ADMINZ_Import extends Adminz {
                             <code>Removes the number of elements from the <strong>END</strong></code> <em>Useful when removing signatures or socials share buttons</em>
                         </p>
                     </td>
-                </tr>
+                </tr>                
                 <tr valign="top">                   
                     <th>
-                        Replace string
+                        Content replace string
                     </th>
                     <td>
                         <p>                         
@@ -1442,11 +1532,43 @@ class ADMINZ_Import extends Adminz {
                         </p>
                         <code>Each character is one line</code>
                     </td>
-                </tr>
+                </tr>                
                 <?php if(class_exists( 'WooCommerce' ) ){ ?>
                 <tr valign="top">                   
                     <th>
-                        Single product
+                        <h3>Product</h3>
+                    </th>
+                    <td>
+                        
+                    </td>
+                </tr>                
+                <tr valign="top">                   
+                    <th>
+                        Gallery
+                    </th>
+                    <td>
+                        <p>
+                            <label>
+                                <input type="checkbox" name="adminz_import_content_product_auto_gallery" <?php echo get_option('adminz_import_content_product_auto_gallery','on') == 'on' ? 'checked' : ''; ?> />
+                                <code>Add entry content images to gallery</code>
+                            </label>
+                        </p>
+                    </td>
+                </tr>
+                <tr valign="top">                   
+                    <th>
+                        Small thumbnail
+                    </th>
+                    <td>
+                        <p>                         
+                            <textarea rows="3" cols="40%" class="input-text wide-input " placeholder="Ex: _150w150h" type="text" name="adminz_import_thumbnail_url_remove_string" ><?php echo get_option('adminz_import_thumbnail_url_remove_string', ""); ?></textarea><br>
+                        </p>                        
+                        <code>Usefull to get full image from image size small | Each character is one line</code>
+                    </td>
+                </tr>
+                <tr valign="top">                   
+                    <th>
+                        Price
                     </th>
                     <td>
                         <p>
@@ -1489,7 +1611,9 @@ class ADMINZ_Import extends Adminz {
         register_setting($this->options_group, 'adminz_import_product_header_title');
         register_setting($this->options_group, 'adminz_import_product_title');
         register_setting($this->options_group, 'adminz_import_product_price');
-        register_setting($this->options_group, 'adminz_import_product_thumbnail');
+        register_setting($this->options_group, 'adminz_import_product_prices');
+        register_setting($this->options_group, 'adminz_import_product_thumbnail');         
+        register_setting($this->options_group, 'adminz_import_product_gallery');
         register_setting($this->options_group, 'adminz_import_product_short_description');
         register_setting($this->options_group, 'adminz_import_product_content');
         register_setting($this->options_group, 'adminz_import_product_single_add_to_cart_button');
@@ -1499,15 +1623,18 @@ class ADMINZ_Import extends Adminz {
         // category product
         register_setting($this->options_group, 'adminz_import_category_product_wrapper');
         register_setting($this->options_group, 'adminz_import_category_product_item');
-        register_setting($this->options_group, 'adminz_import_category_product_item_titles');
+        register_setting($this->options_group, 'adminz_import_category_product_item_title');
         // content fix
         //register_setting($this->options_group, 'adminz_import_content_auto_save_image');
+        
+        register_setting($this->options_group, 'adminz_import_thumbnail_url_remove_string');
         register_setting($this->options_group, 'adminz_import_content_remove_link');
         register_setting($this->options_group, 'adminz_import_content_remove_script');
         register_setting($this->options_group, 'adminz_import_content_remove_first');
         register_setting($this->options_group, 'adminz_import_content_remove_end');
         register_setting($this->options_group, 'adminz_import_content_replace_from');
-        register_setting($this->options_group, 'adminz_import_content_replace_to');
+        register_setting($this->options_group, 'adminz_import_content_replace_to');        
+        register_setting($this->options_group, 'adminz_import_content_product_auto_gallery');
         register_setting($this->options_group, 'adminz_import_content_product_decimal_seprator');
     }
 }
