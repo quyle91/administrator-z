@@ -1362,6 +1362,8 @@ class ADMINZ_Import extends Adminz {
                 <tr valign="top">                   
                     <th>
                         Post single
+                        </br>
+                        <a target="_blank" href="<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/post-single.svg'; ?>">View guide</a>
                     </th>
                     <td>
                         <p>
@@ -1385,6 +1387,8 @@ class ADMINZ_Import extends Adminz {
                 <tr valign="top">                   
                     <th>
                         Category/ blog
+                        </br>
+                        <a target="_blank" href="<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/category-blog.svg'; ?>">View guide</a>
                     </th>
                     <td>
                         <p>                         
@@ -1405,6 +1409,8 @@ class ADMINZ_Import extends Adminz {
                 <tr valign="top">                   
                     <th>
                         Product single
+                        </br>
+                        <a target="_blank" href="<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/product-single.svg'; ?>">View guide</a>
                     </th>
                     <td>
                         <p>
@@ -1461,6 +1467,8 @@ class ADMINZ_Import extends Adminz {
                 <tr valign="top">                   
                     <th>
                         Product list
+                        </br>
+                        <a target="_blank" href="<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/product-list.svg'; ?>">View guide</a>
                     </th>
                     <td>
                         <p>                         
