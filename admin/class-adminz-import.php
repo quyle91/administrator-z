@@ -1361,9 +1361,7 @@ class ADMINZ_Import extends Adminz {
                 </tr>
                 <tr valign="top">                   
                     <th>
-                        Post single
-                        </br>
-                        <a target="_blank" href="<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/post-single.svg'; ?>">View guide</a>
+                        <a target="_blank" href="https://quyle91.github.io/img/adminz/post-single.svg">Post single</a>
                     </th>
                     <td>
                         <p>
@@ -1386,9 +1384,7 @@ class ADMINZ_Import extends Adminz {
                 </tr>
                 <tr valign="top">                   
                     <th>
-                        Category/ blog
-                        </br>
-                        <a target="_blank" href="<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/category-blog.svg'; ?>">View guide</a>
+                        <a target="_blank" href="https://quyle91.github.io/img/adminz/category-blog.svg">Category/ blog</a>
                     </th>
                     <td>
                         <p>                         
@@ -1408,9 +1404,7 @@ class ADMINZ_Import extends Adminz {
                 <?php if(class_exists( 'WooCommerce' ) ){ ?>
                 <tr valign="top">                   
                     <th>
-                        Product single
-                        </br>
-                        <a target="_blank" href="<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/product-single.svg'; ?>">View guide</a>
+                        <a target="_blank" href="https://quyle91.github.io/img/adminz/product-single.svg">Product single</a>
                     </th>
                     <td>
                         <p>
@@ -1466,9 +1460,7 @@ class ADMINZ_Import extends Adminz {
                 </tr>
                 <tr valign="top">                   
                     <th>
-                        Product list
-                        </br>
-                        <a target="_blank" href="<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/product-list.svg'; ?>">View guide</a>
+                        <a target="_blank" href="https://quyle91.github.io/img/adminz/product-list.svg">Product list</a>
                     </th>
                     <td>
                         <p>                         

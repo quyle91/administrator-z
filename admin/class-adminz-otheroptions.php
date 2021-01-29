@@ -4,11 +4,11 @@ namespace Adminz\Admin;
 class ADMINZ_OtherOptions extends Adminz
 {
 	public $options_group = "adminz_otheroptions";
-	public $title = 'Other';
+	public $title = 'Other Functions';
 	public $slug  = 'adminz_otheroptions';
 	public $rand;
 	function __construct() {
-		//add_filter( 'adminz_setting_tab', [$this,'register_tab']);		
+		add_filter( 'adminz_setting_tab', [$this,'register_tab']);		
 		add_action( 'init', array( $this, 'add_shortcodes') );
 
 	}
@@ -40,9 +40,22 @@ class ADMINZ_OtherOptions extends Adminz
 	        ?>
 	        <table class="form-table">
 	        	<tr valign="top">
-	        		<th><h3>Shortcodes</h3></th>
-	        		<td>Some shortcodes </td>
-	        	</tr>	        	     	
+	        		<th><h3>Enable functions</h3></th>
+	        		<td>
+	        			
+	        		</td>
+	        	</tr>	  
+	        	<tr valign="top">
+	        		<th>Auto replace image</th>
+	        		<td>
+	        			<p>
+	        				<label>
+	        					<input type="checkbox" />
+	        					When upload the image, it will be replace old image if the image name as same as name old image from library.<br><code>Coming soon</code>
+	        				</label>
+	        			</p>
+	        		</td>
+	        	</tr>      	     	
 	        </table>
 	        <?php submit_button(); ?>
         </form>
