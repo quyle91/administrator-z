@@ -24,7 +24,7 @@ Feature functions:
 6. Some UX Builder shortcodes are added
 7. Some Elementor widget are added
 8. Tool Import post/ product content from external url
-
+9. Auto replace image if as same as old image name - coming soon
 
 
 Website of Author: [https://quyle91.github.io](https://quyle91.github.io)
@@ -46,6 +46,7 @@ For more details you can send mail with your suggestions, recommendation to quyl
 * Administrator Z menu show only administrator user role
 * sercurity disable rest api json is default enabled when plugin loaded
 * sercurity new disable file edit is default enabled when plugin loaded
+* new tab other functions
 
 = 1.2 =
 * Some flatsome filter hook, action hook
