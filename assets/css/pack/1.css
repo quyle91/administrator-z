@@ -115,6 +115,19 @@ div[class*="box-shadow"] .box-text-bottom .box-image,
 	background-color: var(--primary-color);
 	border-color: var(--primary-color);
 }
+.entry-content *,
+.page-wrapper *,
+.page-wrapper .has-background-dim:before,
+.entry-content .has-background-dim::before{
+	border-radius: 13px;
+}
+
+.has-background,
+.has-background-dim{
+	padding: 10px;
+	margin-bottom: 10px;
+}
+
 /*slider*/
 .slider-nav-simple.slider-nav-light .flickity-prev-next-button svg{
 	background: none !important;
@@ -191,6 +204,7 @@ div[class*="box-shadow"] .box-text-bottom .box-image,
 }
 .accordion .accordion-item .accordion-title{
 	border-top-color: #ddd;
+	border-radius: 0px; 
 }
 .accordion .accordion-item:first-child .accordion-title{
 	border-top: none;
@@ -293,6 +307,7 @@ div[class*="box-shadow"] .box-text-bottom .box-image,
 #product-sidebar .widget ul>li+li,
 #shop-sidebar .widget ul>li+li{
     border-top: solid 1px #FFF;
+    border-radius: 0px;
 }
 #secondary .product_list_widget li,
 #product-sidebar .product_list_widget li,
@@ -355,7 +370,8 @@ body input[type='button']{
 	border-radius: 5px;
 }
 .nav-pagination>li>a.page-number,
-.nav-pagination>li>span {
+.nav-pagination>li>span,
+.nav-pagination>li>a {
     background: #ebebeb;
     border-color: transparent;
     font-weight: 400;

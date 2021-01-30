@@ -9,10 +9,12 @@ class ADMINZ_OtherOptions extends Adminz
 	public $rand;
 	function __construct() {
 		add_filter( 'adminz_setting_tab', [$this,'register_tab']);		
-		add_action( 'init', array( $this, 'add_shortcodes') );
+		add_action( 'init', [$this, 'load_shortcodes'] );	
 
 	}
-	function add_shortcodes(){
+	
+	
+	function load_shortcodes(){
 		$shortcodefiles = glob(ADMINZ_DIR.'shortcodes/otheroptions*.php');
 		if(!empty($shortcodefiles)){
 			foreach ($shortcodefiles as $file) {

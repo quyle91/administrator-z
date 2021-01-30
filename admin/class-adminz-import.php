@@ -399,6 +399,9 @@ class ADMINZ_Import extends Adminz {
         
         $return['_sale_price'] = min($price_arr);
         $return['_price'] = max($price_arr);
+        if(count($price_arr)==1){
+            unset($return['_sale_price']);
+        }
 
         
         // get entry image as first array
@@ -406,21 +409,13 @@ class ADMINZ_Import extends Adminz {
         $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//img");
         if (!is_null($imgs)){
             foreach ($imgs as $element){
-                if ($element->getAttribute('src')){                    
+                if(substr( $element->getAttribute('src'), 0, 5 ) == "data:"){
+                    $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('data-src'),$link);
+                }else {
                     $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
                 }
             }
         }
-
-        // get product gallery 
-        $gallery_class= get_option('adminz_import_product_gallery', 'product-thumbnails thumbnails');
-        $gallery_wrap = $xpath->query("//*[contains(@class, '" . $gallery_class . "')]//img");
-        if (!is_null($gallery_wrap)) {
-            foreach ($gallery_wrap as $element){
-                $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
-            }
-        }
-
 
         // get all image in entry-content        
         $include_gallery = get_option('adminz_import_content_product_auto_gallery', 'on');
@@ -429,8 +424,12 @@ class ADMINZ_Import extends Adminz {
             $imgs = $xpath->query("//*[contains(@class, '" . $contentclass . "')]//img");
             if (!is_null($imgs)){
                 foreach ($imgs as $element){
-                    if ($element->getAttribute('src')){                    
-                        $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
+                    if ($element->getAttribute('src')){       
+                        if(substr( $element->getAttribute('src'), 0, 5 ) == "data:"){
+                            $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('data-src'),$link);
+                        }else {
+                            $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
+                        }
                     }
                 }
             }
@@ -659,7 +658,7 @@ class ADMINZ_Import extends Adminz {
     }
     function fix_product_price($price){
         // fix for decima
-        return substr($price, 0,strlen($price)-get_option('adminz_import_content_product_decimal_seprator', 0));        
+        return $price/pow(10,get_option('adminz_import_content_product_decimal_seprator', 0));        
     }
     function fix_url($url, $link) {        
         preg_match('/(http(|s)):\/\/(.*?)\//si', $link, $output);
@@ -1083,9 +1082,9 @@ class ADMINZ_Import extends Adminz {
                                         if(data_test.post_thumbnail){
                                             for (var i = 0; i < data_test.post_thumbnail.length; i++) {
                                                 if(i==0){
-                                                    html_test +="<div><img src='"+data_test.post_thumbnail[i]+"'/></div>";
+                                                    html_test +="<div><img style='width: 500px;' src='"+data_test.post_thumbnail[i]+"'/></div>";
                                                 }else{
-                                                    html_test +='<img style="margin-right: 10px; height: 70px; border: 5px solid silver;" src="'+data_test.post_thumbnail[i]+'"/>';
+                                                    html_test +='<img style="margin-right: 10px; height: 100px; border: 5px solid silver;" src="'+data_test.post_thumbnail[i]+'"/>';
                                                 }
                                             }
                                         }else{
@@ -1301,7 +1300,7 @@ class ADMINZ_Import extends Adminz {
                     <th scope="row">From post</th>
                     <td>
                         <label>
-                            <input type="url" name="adminz_import_from_post" placeholder="Post url here" value="<?php echo get_option('adminz_import_from_post', ''); ?>"> 
+                            <input type="url" name="adminz_import_from_post" placeholder="https://test.minhkhang.net/?p=1794" value="<?php echo get_option('adminz_import_from_post', 'https://test.minhkhang.net/?p=1794'); ?>"> 
                         </label>
                         <button class="button test_single">Test post</button>
                         <button class="button button-primary run_import_single">Run import</button>
@@ -1314,7 +1313,7 @@ class ADMINZ_Import extends Adminz {
                     <th scope="row">From category</th>
                     <td>
                         <label>
-                            <input type="url" name="adminz_import_from_category" placeholder="Post url here" value="<?php echo get_option('adminz_import_from_category', ''); ?>"> 
+                            <input type="url" name="adminz_import_from_category" placeholder="https://test.minhkhang.net/?page_id=92" value="<?php echo get_option('adminz_import_from_category', 'https://test.minhkhang.net/?page_id=92'); ?>"> 
                         </label>
                         <button class="button test_category">Test category</button>
                         <button class="button button-primary run_import_category">Run import</button>
@@ -1328,7 +1327,7 @@ class ADMINZ_Import extends Adminz {
                     <th scope="row">From Product</th>
                     <td>
                         <label>
-                            <input type="url" name="adminz_import_from_product" placeholder="Product url here" value="<?php echo get_option('adminz_import_from_product', ''); ?>"> 
+                            <input type="url" name="adminz_import_from_product" placeholder="https://test.minhkhang.net/?product=all-star-canvas-hi-converse" value="<?php echo get_option('adminz_import_from_product', 'https://test.minhkhang.net/?product=all-star-canvas-hi-converse'); ?>"> 
                         </label>
                         <button class="button test_product">Test product</button>
                         <button class="button button-primary run_import_single_product">Run import</button>
@@ -1341,7 +1340,7 @@ class ADMINZ_Import extends Adminz {
                     <th scope="row">From Product category</th>
                     <td>
                         <label>
-                            <input type="url" name="adminz_import_from_product_category" placeholder="Product category url here" value="<?php echo get_option('adminz_import_from_product_category', ''); ?>"> 
+                            <input type="url" name="adminz_import_from_product_category" placeholder="https://test.minhkhang.net/?post_type=product" value="<?php echo get_option('adminz_import_from_product_category', 'https://test.minhkhang.net/?post_type=product'); ?>"> 
                         </label>
                         <button class="button test_category_product">Test product category</button>
                         <button class="button button-primary run_import_category_product">Run import</button>
@@ -1374,7 +1373,7 @@ class ADMINZ_Import extends Adminz {
                         </p>
                         <p>
                             <input type="text" name="adminz_import_post_thumbnail" placeholder='entry-image' value="<?php echo get_option('adminz_import_post_thumbnail', 'entry-image'); ?>" />
-                            <code>Thumbnail wrapper class</code>
+                            <code>Thumbnails wrapper class</code>
                         </p>
                         <p>
                             <input type="text" name="adminz_import_post_content" placeholder='entry-content' value="<?php echo get_option('adminz_import_post_content', 'entry-content'); ?>" />
@@ -1444,10 +1443,10 @@ class ADMINZ_Import extends Adminz {
                             <input type="text" name="adminz_import_product_thumbnail" placeholder='woocommerce-product-gallery__image' value="<?php echo get_option('adminz_import_product_thumbnail', 'woocommerce-product-gallery__image'); ?>" />
                             <code>Thumbnail wrapper class</code>
                         </p>
-                        <p>
+                        <!-- <p>
                             <input type="text" name="adminz_import_product_gallery" placeholder='product-thumbnails thumbnails' value="<?php echo get_option('adminz_import_product_gallery', 'product-thumbnails thumbnails'); ?>" />
                             <code>Gallery wrapper class</code>
-                        </p>
+                        </p> -->
                         <p>
                             <input type="text" name="adminz_import_product_short_description" placeholder='product-short-description' value="<?php echo get_option('adminz_import_product_short_description', 'product-short-description'); ?>" />
                             <code>Excerpt wrapper class</code>
@@ -1613,7 +1612,7 @@ class ADMINZ_Import extends Adminz {
         register_setting($this->options_group, 'adminz_import_product_price');
         register_setting($this->options_group, 'adminz_import_product_prices');
         register_setting($this->options_group, 'adminz_import_product_thumbnail');         
-        register_setting($this->options_group, 'adminz_import_product_gallery');
+        //register_setting($this->options_group, 'adminz_import_product_gallery');
         register_setting($this->options_group, 'adminz_import_product_short_description');
         register_setting($this->options_group, 'adminz_import_product_content');
         register_setting($this->options_group, 'adminz_import_product_single_add_to_cart_button');
