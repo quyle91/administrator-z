@@ -2,7 +2,7 @@
 /*
 Plugin Name: Administrator Z
 Description: Lots of tools for quick website setup.
-Version: 1.3
+Version: 1.4
 Author: Quyle91
 Author URI: https://quyle91.github.io/
 License: GPLv2 or later

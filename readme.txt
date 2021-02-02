@@ -1,11 +1,11 @@
 === Administrator Z ===
 Contributors: quyle91
-Tags: auto update, xmlrpc.php, ping back, contact group button, UX Builder, elementor, shortcodes, login logo
+Tags: auto-update, contact group button, import data, disable xmlrpc.php, replace image
 Donate link: http://paypal.me/quyle91
 Requires at least: 4.0
 Tested up to: 5.6
 Requires PHP: 5.6
-Stable tag: 1.3
+Stable tag: 1.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,8 +24,9 @@ Feature functions:
 6. Some UX Builder shortcodes are added
 7. Some Elementor widget are added
 8. Tool Import post/ product content from external url
-9. Auto replace image if as same as old image name - coming soon
+9. Replace image keep ID & URL
 
+Setting page plugin: Tool->Administrator Z
 
 Website of Author: [https://quyle91.github.io](https://quyle91.github.io)
 Submit Issues: [https://github.com/quyle91/administrator-z/issues/new](https://github.com/quyle91/administrator-z/issues/new)
@@ -40,6 +41,11 @@ For more details you can send mail with your suggestions, recommendation to quyl
 == Screenshots ==
 
 == Changelog ==
+
+= 1.4 =
+
+* New Replace image: Keep ID & URL
+* Tool import: Remove product gallery class field in options
 
 = 1.3 =
 * New Import post/ product tab 
@@ -59,4 +65,4 @@ For more details you can send mail with your suggestions, recommendation to quyl
 * New tab about me for contact for more functions
 
 = 1.0 = 
-* Update plugin to SVN
+* Upload plugin to SVN
