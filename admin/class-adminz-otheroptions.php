@@ -100,12 +100,12 @@ class ADMINZ_OtherOptions extends Adminz
 				    $wpdb->update( 
 				        $wpdb->posts,         
 				        array('ID'=>$oldid),
-				        array('ID'=>$attach_id), 
+				        array('ID'=>$attach_id)
 				    );
 				    $wpdb->update( 
 				        $wpdb->postmeta,         
 				        array('post_id'=>$oldid),
-				        array('post_id'=>$attach_id), 
+				        array('post_id'=>$attach_id)
 				    );
 			    }else{
 			    	$html_item['replaced'] = false;
