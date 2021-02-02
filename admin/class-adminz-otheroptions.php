@@ -41,7 +41,7 @@ class ADMINZ_OtherOptions extends Adminz
 	    	];
 	        if (in_array($_FILES['file']['type'][$i], $arr_img_ext)) {
 	        	$html_item['type_support'] = true;
-	        	$searchname = sanitize_title(str_replace(".".str_replace("image/", "", $filetype),"",$filename));	        	
+	        	$searchname = sanitize_title(str_replace([".jpg",".jpeg",".png",".gif"], "", $filename));
 	        	$args = array(	        
 			        'name' => $searchname,
 			        'post_type'=> 'attachment',
@@ -65,7 +65,7 @@ class ADMINZ_OtherOptions extends Adminz
 					$olddir = "/".substr($_wp_attached_file,0,7);
 					
 					// 2: delete old Img
-					wp_delete_post( $oldid, true );				    
+					wp_delete_attachment( $oldid, true );				    
 
 					// 3: upload new image
 					$_filterhook = true;
@@ -140,6 +140,7 @@ class ADMINZ_OtherOptions extends Adminz
 					        <div><em>Usage: Prepare a replacement image in advance with the same name as the current image on the website. Click the upload button.</em></div>
 					        <div><em>Note: Image type support: Jpg/ jpeg/ png/ gif</em></div>
 					        <div><em>Note: Only images listed in the gallery are supported.</em></div>
+					        <div><em>Note: File search must be full size.</em></div>
 					    </div>
 					</form>
 					<div class="data_test"></div>
@@ -154,8 +155,7 @@ class ADMINZ_OtherOptions extends Adminz
 					            form_data.append('file[]', file_obj[i]);
 					            // reader for demo image
 					            var reader = new FileReader();
-					            reader.onload = function(event) {
-					            	console.log( typeof event.target.result);
+					            reader.onload = function(event) {					            	
 						            demoreader.push(event.target.result);						            
 						        };
 						        reader.readAsDataURL(file_obj[i]);
