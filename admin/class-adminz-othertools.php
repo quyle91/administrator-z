@@ -179,15 +179,8 @@ class ADMINZ_OtherTools extends Adminz
 					        $this = $(this);
 					        file_obj = $this.prop('files');
 					        form_data = new FormData();
-					        var demoreader = [];
 					        for(i=0; i<file_obj.length; i++) {
 					            form_data.append('file[]', file_obj[i]);
-					            // reader for demo image
-					            var reader = new FileReader();
-					            reader.onload = function(event) {					            	
-						            demoreader.push(event.target.result);						            
-						        };
-						        reader.readAsDataURL(file_obj[i]);
 					        }
 					        form_data.append('action', 'file_upload');					 		
 					        $.ajax({

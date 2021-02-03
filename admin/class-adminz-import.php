@@ -18,7 +18,7 @@ class ADMINZ_Import extends Adminz {
     public $options_group = "adminz_import";
     public $title = 'Import';
     public $slug = 'adminz_import';
-    function __construct() {
+    function __construct() {        
         add_action('admin_init', [$this, 'register_option_setting']);
         add_filter('adminz_setting_tab', [$this, 'register_tab']);        
         add_action('wp_ajax_test_single', [$this, 'test_single']);
@@ -178,22 +178,40 @@ class ADMINZ_Import extends Adminz {
         // thumbnail and gallery 
         $post_thumbnails = $data['post_thumbnail'];
         $gallery = [];
+        $thumbnail_id_tmp = 0;
         if(!empty($post_thumbnails) and is_array($post_thumbnails)){
             foreach ($post_thumbnails as $key => $url) {
                 $res = $this->save_images($url,$data['post_title']."-".$key);
-                if($key ==0){
-                    set_post_thumbnail( $product_id, $res['attach_id'] );  
+                if($res['attach_id']){
+                    $gallery[] = $res['attach_id'];
+                    if(!$thumbnail_id_tmp){
+                        $thumbnail_id_tmp = $res['attach_id'];
+                    }
                 }
-                $data['post_content'] = $this->replace_img_content($url,$res['attach_id'],$data['post_content']);
-                $gallery[] = $res['attach_id'];
             }
         }
+
+        // content thumbnails
+        $content_thumbnails = $data['content_thumbnail'];
+        if(!empty($content_thumbnails) and is_array($content_thumbnails)){
+            foreach ($content_thumbnails as $key => $url) {
+                $res = $this->save_images($url,$data['post_title']."-".$key);
+                if($res['attach_id']){
+                    $data['post_content'] = $this->replace_img_content($url,$res['attach_id'],$data['post_content']); 
+                    if(!$thumbnail_id_tmp){
+                        $thumbnail_id_tmp = $res['attach_id'];
+                    }
+                }
+            }
+        }
+
         $content_replaced = array(
             'ID'           => $product_id,
             'post_content' => $this->fix_content($data['post_content'])
         ); 
         wp_update_post( $content_replaced );      
         array_shift($gallery);
+        set_post_thumbnail( $product_id, $thumbnail_id_tmp );
         update_post_meta($product_id,'_product_image_gallery',implode(",", $gallery));
         $product_id = $product->save();
         if(!$product_id){
@@ -412,33 +430,32 @@ class ADMINZ_Import extends Adminz {
         if($image_class){
             $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//img");
             if (!is_null($imgs)){
-                foreach ($imgs as $element){
+                foreach ($imgs as $element){                    
+                    $datasrc = "src";
                     if(substr( $element->getAttribute('src'), 0, 5 ) == "data:"){
-                        $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('data-src'),$link);
-                    }else {
-                        $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
+                        $datasrc = "data-src";
                     }
+                    $return['post_thumbnail'][] = $this->fix_url($element->getAttribute($datasrc),$link);
                 }
             }
         }        
 
-        // get all image in entry-content        
+        // get all image in entry-content
         $include_gallery = get_option('adminz_import_content_product_auto_gallery', 'on');
         $contentclass = get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description');
-        if($include_gallery =="on"){            
-            $imgs = $xpath->query("//*[contains(@class, '" . $contentclass . "')]//img");
-            if (!is_null($imgs)){
-                foreach ($imgs as $element){
-                    if ($element->getAttribute('src')){       
-                        if(substr( $element->getAttribute('src'), 0, 5 ) == "data:"){
-                            $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('data-src'),$link);
-                        }else {
-                            $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
-                        }
-                    }
+        $imgs = $xpath->query("//*[contains(@class, '" . $contentclass . "')]//img");
+        if (!is_null($imgs)){
+            foreach ($imgs as $element){
+                $datasrc = "src";
+                if(substr( $element->getAttribute('src'), 0, 5 ) == "data:"){
+                    $datasrc = "data-src";
                 }
+                if($include_gallery =="on"){
+                    $return['post_thumbnail'][] = $this->fix_url($element->getAttribute($datasrc),$link);
+                }                
+                $return['content_thumbnail'][] = $this->fix_url($element->getAttribute($datasrc),$link);
             }
-        }        
+        }      
         $return['post_thumbnail'] = array_values(array_unique($return['post_thumbnail']));
         // product short_description        
         $excerpt_class = get_option('adminz_import_product_short_description', 'product-short-description');
@@ -608,7 +625,7 @@ class ADMINZ_Import extends Adminz {
         return $return;
     }
     function replace_img_content($img_old_url,$image_new_id,$content){
-        $doc = new DOMDocument();        
+        $doc = new DOMDocument();
         libxml_use_internal_errors(true);
         $content_encode = mb_convert_encoding($content, 'HTML-ENTITIES', "UTF-8");
         $doc->loadHTML($content_encode);
@@ -618,10 +635,10 @@ class ADMINZ_Import extends Adminz {
         $imgs = $xpath->query("//img");
 
         if (!is_null($imgs)) {
-            foreach ($imgs as $img) {                
-                if ($img->getAttribute('src') == $img_old_url){
-                    
-                    $old_html = $doc->saveHTML($img);
+            foreach ($imgs as $img) {  
+            
+                if ($img->getAttribute('src') == $img_old_url){                    
+                    $old_html = $doc->saveHTML($img);                    
                     $width = $img->getAttribute('width')? $img->getAttribute('width') : "";
                     $height = $img->getAttribute('height')? $img->getAttribute('height') : "";
                     $class = $img->getAttribute('class')? $img->getAttribute('class') : "";
@@ -634,7 +651,7 @@ class ADMINZ_Import extends Adminz {
                         $class = ['class'=>$class];
                     }
                     $new = wp_get_attachment_image($image_new_id,$size,"",$class);
-                    $content = str_replace($old_html, $new, $content);                    
+                    $content = str_replace($old_html, $new, $content);
                 }
             }
         }
