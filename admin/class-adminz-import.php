@@ -132,7 +132,10 @@ class ADMINZ_Import extends Adminz {
                         $variation->set_sale_price($value->display_price);
                         $variation->set_parent_id($product_id);
                         $variation->set_attributes($temp_set_attrs);
+                        $res = $this->save_images($value->image->url,$data['post_title']."-".$value->image->title);
+                        $variation->set_image_id($res['attach_id']);
                         $variation->save();
+
                     }
                 }               
 
@@ -177,11 +180,16 @@ class ADMINZ_Import extends Adminz {
 
         // thumbnail and gallery 
         $post_thumbnails = $data['post_thumbnail'];
+        $content_thumbnails = $data['content_thumbnail'];
+        $include_gallery = get_option('adminz_import_content_product_auto_gallery', 'on');
         $gallery = [];
         $thumbnail_id_tmp = 0;
         if(!empty($post_thumbnails) and is_array($post_thumbnails)){
             foreach ($post_thumbnails as $key => $url) {
                 $res = $this->save_images($url,$data['post_title']."-".$key);
+                if($include_gallery =="on" and in_array($url, $content_thumbnails)){
+                    $data['post_content'] = $this->replace_img_content($url,$res['attach_id'],$data['post_content']); 
+                }
                 if($res['attach_id']){
                     $gallery[] = $res['attach_id'];
                     if(!$thumbnail_id_tmp){
@@ -192,27 +200,28 @@ class ADMINZ_Import extends Adminz {
         }
 
         // content thumbnails
-        $content_thumbnails = $data['content_thumbnail'];
-        if(!empty($content_thumbnails) and is_array($content_thumbnails)){
-            foreach ($content_thumbnails as $key => $url) {
-                $res = $this->save_images($url,$data['post_title']."-".$key);
-                if($res['attach_id']){
-                    $data['post_content'] = $this->replace_img_content($url,$res['attach_id'],$data['post_content']); 
-                    if(!$thumbnail_id_tmp){
-                        $thumbnail_id_tmp = $res['attach_id'];
+        if($include_gallery !=="on"){
+            if(!empty($content_thumbnails) and is_array($content_thumbnails)){
+                foreach ($content_thumbnails as $key => $url) {
+                    $res = $this->save_images($url,$data['post_title']."-".$key);
+                    if($res['attach_id']){
+                        $data['post_content'] = $this->replace_img_content($url,$res['attach_id'],$data['post_content']); 
+                        if(!$thumbnail_id_tmp){
+                            $thumbnail_id_tmp = $res['attach_id'];
+                        }
                     }
                 }
             }
-        }
+        }        
 
         $content_replaced = array(
             'ID'           => $product_id,
             'post_content' => $this->fix_content($data['post_content'])
         ); 
-        wp_update_post( $content_replaced );      
+        wp_update_post( $content_replaced );
         array_shift($gallery);
-        set_post_thumbnail( $product_id, $thumbnail_id_tmp );
-        update_post_meta($product_id,'_product_image_gallery',implode(",", $gallery));
+        $product->set_image_id($thumbnail_id_tmp);
+        $product->set_gallery_image_ids($gallery);
         $product_id = $product->save();
         if(!$product_id){
             wp_send_json_success('<code>Cannot import!</code>');
@@ -247,7 +256,7 @@ class ADMINZ_Import extends Adminz {
 
         // get entry image as first array
         $image_class = get_option('adminz_import_post_thumbnail', 'entry-image');
-        if($image){
+        if($image_class){
             $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//img");
             if (!is_null($imgs)) {
                 foreach ($imgs as $element) {
@@ -776,7 +785,7 @@ class ADMINZ_Import extends Adminz {
                         }                           
                         return false;
                     })
-                    $('.run_import_single').click(function(){
+                    $('.run_import_single').click(function(){                        
                         var link = $(this).closest("td").find("input").val();
                         if(link){
                             $(".data_test").html("");
@@ -917,6 +926,7 @@ class ADMINZ_Import extends Adminz {
                         })
                     }
                     function run_import_single(link,output){
+                        var start = new Date().getTime();
                         $.ajax({
                             type : "post",
                             dataType : "json",
@@ -932,10 +942,12 @@ class ADMINZ_Import extends Adminz {
                             },
                             success: function(response) {                                
                                 if(response.success) {
+                                    var end = new Date().getTime();
                                     var html_run = "";
                                     html_run += "<div class='notice notice-alt notice-success updated-message'>";
                                     html_run += '<p aria-label="done">';
                                     html_run += response.data;
+                                    html_run +="<code>"+ (end - start)/1000+" seconds</code>";
                                     html_run += '</p>';
                                     html_run +="</div>";
                                     output.html(html_run);                                    
@@ -951,6 +963,7 @@ class ADMINZ_Import extends Adminz {
                         })                        
                     }
                     function run_import_single_product(link,output){
+                        var start = new Date().getTime();
                         $.ajax({
                             type : "post",
                             dataType : "json",
@@ -960,19 +973,20 @@ class ADMINZ_Import extends Adminz {
                                 link : link
                             },
                             context: this,
-                            beforeSend: function(){
+                            beforeSend: function(){                                
                                 var html_run = '<div class="notice notice-alt updating-message"><p aria-label="Importing...">Importing...</p></div>';
                                 output.html(html_run);
                             },
                             success: function(response) {                                
                                 if(response.success) {
-
+                                    var end = new Date().getTime();
                                     var html_run = "";
                                     html_run += "<div class='notice notice-alt notice-success updated-message'>";
                                     html_run += '<p aria-label="done">';
                                     html_run += response.data;
+                                    html_run +="<code>"+ (end - start)/1000+" seconds</code>";
                                     html_run += '</p>';
-                                    html_run +="</div>";
+                                    html_run +="</div>";                                    
                                     output.html(html_run);
                                 }
                                 else {
