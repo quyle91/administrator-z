@@ -24,7 +24,7 @@ function adminz_namespace() {
 	new Adminz\Admin\ADMINZ_Flatsome;
 	new Adminz\Admin\ADMINZ_Elementor;
 	new Adminz\Admin\ADMINZ_Import;
-	new Adminz\Admin\ADMINZ_OtherOptions;	
+	new Adminz\Admin\ADMINZ_OtherTools;	
 	new Adminz\Admin\ADMINZ_Sercurity;
 	new Adminz\Admin\ADMINZ_Me;
 }

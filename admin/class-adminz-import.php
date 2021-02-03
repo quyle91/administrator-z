@@ -54,6 +54,7 @@ class ADMINZ_Import extends Adminz {
                 if($key ==0){
                     set_post_thumbnail( $post_id, $res['attach_id'] );  
                 }
+
                 $data['post_content'] = $this->replace_img_content($url,$res['attach_id'],$data['post_content']);
             }
         }        
@@ -228,15 +229,17 @@ class ADMINZ_Import extends Adminz {
 
         // get entry image as first array
         $image_class = get_option('adminz_import_post_thumbnail', 'entry-image');
-        $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//img");
-        if (!is_null($imgs)) {
-            foreach ($imgs as $element) {
-                if ($element->getAttribute('src')) {
-                    $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
-                    break;
+        if($image){
+            $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//img");
+            if (!is_null($imgs)) {
+                foreach ($imgs as $element) {
+                    if ($element->getAttribute('src')) {
+                        $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
+                        break;
+                    }
                 }
             }
-        }
+        }        
 
         // get all image in entry-content
         $contentclass = get_option('adminz_import_post_content', 'entry-content');
@@ -406,16 +409,18 @@ class ADMINZ_Import extends Adminz {
         
         // get entry image as first array
         $image_class = get_option('adminz_import_product_thumbnail', 'woocommerce-product-gallery__image');
-        $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//img");
-        if (!is_null($imgs)){
-            foreach ($imgs as $element){
-                if(substr( $element->getAttribute('src'), 0, 5 ) == "data:"){
-                    $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('data-src'),$link);
-                }else {
-                    $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
+        if($image_class){
+            $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//img");
+            if (!is_null($imgs)){
+                foreach ($imgs as $element){
+                    if(substr( $element->getAttribute('src'), 0, 5 ) == "data:"){
+                        $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('data-src'),$link);
+                    }else {
+                        $return['post_thumbnail'][] = $this->fix_url($element->getAttribute('src'),$link);
+                    }
                 }
             }
-        }
+        }        
 
         // get all image in entry-content        
         $include_gallery = get_option('adminz_import_content_product_auto_gallery', 'on');
@@ -602,18 +607,21 @@ class ADMINZ_Import extends Adminz {
         }        
         return $return;
     }
-    function replace_img_content($img_old_url,$image_new_id,$content){  
-        $doc = new DOMDocument();
+    function replace_img_content($img_old_url,$image_new_id,$content){
+        $doc = new DOMDocument();        
         libxml_use_internal_errors(true);
-        $doc->loadHTML($content);
+        $content_encode = mb_convert_encoding($content, 'HTML-ENTITIES', "UTF-8");
+        $doc->loadHTML($content_encode);
+        
         libxml_clear_errors();
         $xpath = new DOMXpath($doc);
         $imgs = $xpath->query("//img");
 
         if (!is_null($imgs)) {
-            foreach ($imgs as $img) {
+            foreach ($imgs as $img) {                
                 if ($img->getAttribute('src') == $img_old_url){
-                    $old_html = $doc->saveHTMl($img);
+                    
+                    $old_html = $doc->saveHTML($img);
                     $width = $img->getAttribute('width')? $img->getAttribute('width') : "";
                     $height = $img->getAttribute('height')? $img->getAttribute('height') : "";
                     $class = $img->getAttribute('class')? $img->getAttribute('class') : "";

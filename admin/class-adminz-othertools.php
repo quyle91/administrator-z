@@ -1,12 +1,12 @@
 <?php 
 namespace Adminz\Admin;
-class ADMINZ_OtherOptions extends Adminz
+class ADMINZ_OtherTools extends Adminz
 {
-	public $options_group = "adminz_otheroptions";
-	public $title = 'Other Functions';
-	public $slug  = 'adminz_otheroptions';
+	public $options_group = "adminz_othertools";
+	public $title = 'Other Tools';
+	public $slug  = 'adminz_othertools';
 	public $rand;
-	function __construct() {
+	function __construct() {		
 		add_filter( 'adminz_setting_tab', [$this,'register_tab']);		
 		add_action( 'init', [$this, 'load_shortcodes'] );	
 		add_action( 'wp_ajax_file_upload', [$this,'file_upload_callback']);
@@ -30,6 +30,7 @@ class ADMINZ_OtherOptions extends Adminz
 		return $tabs;
 	}
 	function file_upload_callback() {
+		global $wpdb;
 	    $arr_img_ext = array('image/png', 'image/jpeg', 'image/jpg', 'image/gif');
 	    $html = [];
 	    for($i = 0; $i < count($_FILES['file']['name']); $i++) {
@@ -38,6 +39,7 @@ class ADMINZ_OtherOptions extends Adminz
 	    	$html_item = [
 	    		'name' => $filename,
 	    		'type' => $filetype,	    		
+	    		'replaced_url' =>false,
 	    	];
 	        if (in_array($_FILES['file']['type'][$i], $arr_img_ext)) {
 	        	$html_item['type_support'] = true;
@@ -64,9 +66,17 @@ class ADMINZ_OtherOptions extends Adminz
 					$_wp_attachment_metadata = $meta['_wp_attachment_metadata'][0];
 					$olddir = "/".substr($_wp_attached_file,0,7);
 					
-					// 2: delete old Img
-					wp_delete_attachment( $oldid, true );				    
 
+					$post_set_thumbnail = $wpdb->get_results ( "
+					    SELECT post_id
+					    FROM  $wpdb->postmeta
+					        WHERE meta_key = '_thumbnail_id'
+					        AND meta_value = ".$oldid."
+					" );
+
+					// 2: delete old Img
+					wp_delete_attachment( $oldid, true );
+					
 					// 3: upload new image
 					$_filterhook = true;
 					add_filter( 'upload_dir', function( $arr ) use( &$_filterhook ,$olddir){
@@ -82,7 +92,7 @@ class ADMINZ_OtherOptions extends Adminz
 					$dirs = wp_upload_dir();
 					$_filterhook = false; // for remove filter hook
 
-					// 4: update new image informations
+					// 4: update/ fix for new image informations
 					$restype = wp_check_filetype($res['file']);					
 				    $attachment = array(
 				        'guid' => $dirs['baseurl'] . '/' . _wp_relative_upload_path($res['file']) ,
@@ -94,9 +104,9 @@ class ADMINZ_OtherOptions extends Adminz
 				    );
 				    $attach_id = wp_insert_attachment($attachment, $res['file']);
 				    $attach_data = wp_generate_attachment_metadata($attach_id, $res['file']);
-				    wp_update_attachment_metadata($attach_id, $attach_data);
+				    wp_update_attachment_metadata($attach_id, $attach_data);				    
+				    
 
-				    global $wpdb;
 				    $wpdb->update( 
 				        $wpdb->posts,         
 				        array('ID'=>$oldid),
@@ -106,7 +116,26 @@ class ADMINZ_OtherOptions extends Adminz
 				        $wpdb->postmeta,         
 				        array('post_id'=>$oldid),
 				        array('post_id'=>$attach_id)
-				    );
+				    );	
+				    $attach_id = $oldid;
+
+
+				    $filter_blank = true;
+				    add_filter( 'wp_get_attachment_link', function ($markup) use (&$filter_blank) {
+				    	if($filter_blank){
+				    		return preg_replace('/^<a([^>]+)>(.*)$/', '<a\\1 target="_blank">\\2', $markup);
+				    	}
+					    return $markup;
+					}, 10, 6 );
+				    $html_item['replaced_url'] = wp_get_attachment_link($attach_id,"full",false,false,false,['target'=>'_blank']);
+				    $filter_blank = false;
+
+
+				    if(!empty($post_set_thumbnail) and is_array($post_set_thumbnail)){
+						foreach ($post_set_thumbnail as $key => $value) {	
+							set_post_thumbnail( $value->post_id, $attach_id );
+						}
+					}
 			    }else{
 			    	$html_item['replaced'] = false;
 			    }	            
@@ -174,7 +203,7 @@ class ADMINZ_OtherOptions extends Adminz
 					            success: function (response) {
 					            	console.log(response.data);
 					            	var html_run = '<div style="padding: 10px; background-color: white;">';
-					            	html_run +="<table>";
+					            	html_run +="<table class='replace_image_table'>";
 					            	html_run +="<tr>";
 				            			html_run +="<th>Image preview</th>";
 				            			html_run +="<th>Name</th>";
@@ -184,7 +213,7 @@ class ADMINZ_OtherOptions extends Adminz
 				            		html_run +="</tr>";
 					            	for (var i = 0; i < response.data.length; i++) {
 					            		html_run +="<tr>";
-					            			html_run +="<td><img style='width: 100px;' src='"+demoreader[i]+"'/></td>";
+					            			html_run +="<td>"+response.data[i].replaced_url+"</td>";
 					            			html_run +="<td>"+response.data[i].name+"</td>";
 					            			html_run +="<td>"+response.data[i].type+"</td>";
 					            			html_run +="<td>"+response.data[i].type_support+"</td>";
@@ -193,6 +222,7 @@ class ADMINZ_OtherOptions extends Adminz
 					            	}
 					            	html_run +="</table>";
 					            	html_run +='</div>';
+					            	html_run +='<style type="text/css">.replace_image_table img{max-width: 120px; height: auto;border: 5px solid lightgray;}</style>';
 	                                $('.data_test').html(html_run);
 					            }
 					        });
