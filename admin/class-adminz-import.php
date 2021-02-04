@@ -46,7 +46,7 @@ class ADMINZ_Import extends Adminz {
         }
         // query all image and save
         $post_thumbnails = $data['post_thumbnail'];
-        
+        $images_imported = [];
         if(!empty($post_thumbnails) and is_array($post_thumbnails)){
             foreach ($post_thumbnails as $key => $url) {
                 $res = $this->save_images($url,$post_args['post_title']."-".$key);
@@ -54,23 +54,38 @@ class ADMINZ_Import extends Adminz {
                 if($key ==0){
                     set_post_thumbnail( $post_id, $res['attach_id'] );  
                 }
-
-                $data['post_content'] = $this->replace_img_content($url,$res['attach_id'],$data['post_content']);
+                $images_imported[$url] = $res['attach_id'];                
             }
-        }        
-        
+        }           
+        $data['post_content'] = $this->replace_img_content($link,$images_imported,$data['post_content']);
         $content_replaced = array(
             'ID'           => $post_id,
             'post_content' => $this->fix_content($data['post_content'])
-        );
-        
+        );        
         wp_update_post( $content_replaced );
         return $post_id;
     }
     function do_import_single_product($link = false) {
         if(!$link){ $link = $_POST['link']; }
         $data = $this->get_product($link);
-        
+
+        // first import all images and save to array temp
+        $image_all = $data['images_all'];
+        $images_imported = [];
+        if(!empty($image_all) and is_array($image_all)){
+            foreach ($image_all as $key => $url) {
+                $res = $this->save_images($url,$data['post_title']."-".$key);
+                if($res['attach_id']){
+                    $images_imported[$url] = $res['attach_id'];
+                    if(in_array($url, $data['images_gallery'])){
+                        $gallery[] = $res['attach_id'];
+                    }                    
+                    if($url == $data['image_thumbnail']){
+                        $product_thumbnail_id = $res['attach_id'];
+                    }
+                }
+            }
+        }
         // check produduct type and set product type data
         switch ($data['product_type']) {
             case 'external':
@@ -131,11 +146,11 @@ class ADMINZ_Import extends Adminz {
                         $variation->set_regular_price($value->display_regular_price);
                         $variation->set_sale_price($value->display_price);
                         $variation->set_parent_id($product_id);
-                        $variation->set_attributes($temp_set_attrs);
-                        $res = $this->save_images($value->image->url,$data['post_title']."-".$value->image->title);
-                        $variation->set_image_id($res['attach_id']);
+                        $variation->set_attributes($temp_set_attrs);                        
+                        if(in_array($value->image->url,array_keys($images_imported))){
+                            $variation->set_image_id($images_imported[$value->image->url]);
+                        }                   
                         $variation->save();
-
                     }
                 }               
 
@@ -173,55 +188,34 @@ class ADMINZ_Import extends Adminz {
         $product->set_status('publish');
         if($data['short_description']){
             $product->set_short_description($data['short_description']);
-        }        
-
-        $product_id = $product->save();
-                
-
-        // thumbnail and gallery 
-        $post_thumbnails = $data['post_thumbnail'];
-        $content_thumbnails = $data['content_thumbnail'];
-        $include_gallery = get_option('adminz_import_content_product_auto_gallery', 'on');
-        $gallery = [];
-        $thumbnail_id_tmp = 0;
-        if(!empty($post_thumbnails) and is_array($post_thumbnails)){
-            foreach ($post_thumbnails as $key => $url) {
-                $res = $this->save_images($url,$data['post_title']."-".$key);
-                if($include_gallery =="on" and in_array($url, $content_thumbnails)){
-                    $data['post_content'] = $this->replace_img_content($url,$res['attach_id'],$data['post_content']); 
-                }
-                if($res['attach_id']){
-                    $gallery[] = $res['attach_id'];
-                    if(!$thumbnail_id_tmp){
-                        $thumbnail_id_tmp = $res['attach_id'];
-                    }
-                }
-            }
         }
+        $product_id = $product->save();
 
         // content thumbnails
-        if($include_gallery !=="on"){
-            if(!empty($content_thumbnails) and is_array($content_thumbnails)){
-                foreach ($content_thumbnails as $key => $url) {
-                    $res = $this->save_images($url,$data['post_title']."-".$key);
-                    if($res['attach_id']){
-                        $data['post_content'] = $this->replace_img_content($url,$res['attach_id'],$data['post_content']); 
-                        if(!$thumbnail_id_tmp){
-                            $thumbnail_id_tmp = $res['attach_id'];
-                        }
+        if(isset($product_thumbnail_id)){
+            $product->set_image_id($product_thumbnail_id);
+            // unset if like product thumbnail
+            if(!empty($gallery) and is_array($gallery)){
+                foreach ($gallery as $key => $value) {
+                    if($value == $product_thumbnail_id){
+                        unset($gallery[$key]);
                     }
                 }
-            }
-        }        
+            }        
+        } 
 
+        if(isset($gallery)){
+            $product->set_gallery_image_ids($gallery);
+        }
+
+        // fix content image url
+        $data['post_content'] = $this->replace_img_content($link,$images_imported,$data['post_content']);
         $content_replaced = array(
             'ID'           => $product_id,
             'post_content' => $this->fix_content($data['post_content'])
         ); 
         wp_update_post( $content_replaced );
-        array_shift($gallery);
-        $product->set_image_id($thumbnail_id_tmp);
-        $product->set_gallery_image_ids($gallery);
+        
         $product_id = $product->save();
         if(!$product_id){
             wp_send_json_success('<code>Cannot import!</code>');
@@ -312,6 +306,11 @@ class ADMINZ_Import extends Adminz {
         // product type
         $type = $xpath->query("//*[contains(@class, 'type-product')]/div");
         $return['product_type'] = "simple";
+        $return['images_gallery'] = [];
+        $return['image_thumbnail'] = "";
+        $return['images_gallery'] = [];
+        $return['images_variations'] = [];
+        $return['images_content'] = [];
         if (!is_null($type)) {
             foreach ($type as $element) {               
                 if($element->parentNode->getAttribute('id')){
@@ -345,9 +344,16 @@ class ADMINZ_Import extends Adminz {
                 if (!is_null($variable_form)) {
                     foreach ($variable_form as $element) {
                         $data_variable = $element->getAttribute('data-product_variations');
-                        $return['product_type_data'] = json_decode( $data_variable );
+                        $data_variable = json_decode( $data_variable );
+                        $return['product_type_data'] = $data_variable;
+                        if(!empty($data_variable) and is_array($data_variable)){
+                            foreach ($data_variable as $key => $variable) {
+                                $return['images_variations'][] = $this->fix_url($variable->image->url,$link); 
+                            }
+                        }
                     }
                 }
+
                 // list variations 
                 $return['variations_list'] = [];
                 $return['default_attribute'] = [];
@@ -371,8 +377,7 @@ class ADMINZ_Import extends Adminz {
                         $attr_array['attr_options'] = $attr_options;
                         $return['variations_list'][] = $attr_array;
                     }
-                }
-                //variations_list
+                }                
                 break;
             case 'grouped':               
 
@@ -433,40 +438,46 @@ class ADMINZ_Import extends Adminz {
             unset($return['_sale_price']);
         }
 
-        
-        // get entry image as first array
+        // images on content
+        $contentclass = get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description');
+        if($contentclass){
+            $imgs = $xpath->query("//*[contains(@class, '" . $contentclass . "')]//img");
+            if (!is_null($imgs)){
+                foreach ($imgs as $element){                             
+                    $return['images_content'][] = $this->fix_url($element->getAttribute('src'),$link);
+                }
+            }
+        }
+
+        // images on gallery
         $image_class = get_option('adminz_import_product_thumbnail', 'woocommerce-product-gallery__image');
         if($image_class){
             $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//img");
             if (!is_null($imgs)){
-                foreach ($imgs as $element){                    
-                    $datasrc = "src";
-                    if(substr( $element->getAttribute('src'), 0, 5 ) == "data:"){
-                        $datasrc = "data-src";
-                    }
-                    $return['post_thumbnail'][] = $this->fix_url($element->getAttribute($datasrc),$link);
+                foreach ($imgs as $element){  
+                    $return['images_gallery'][] = $this->fix_url($element->getAttribute('data-src'),$link);
                 }
             }
-        }        
+        }
+        // include variation to gallery
+        $include_variations_to_gallery = get_option('adminz_import_product_include_image_variations_to_gallery', 'on');
+        if($include_variations_to_gallery =="on"){            
+            $return['images_gallery'] = array_merge($return['images_gallery'],$return['images_variations']);
+        }
+        // include content to gallery
+        $include_content_to_gallery = get_option('adminz_import_product_include_image_content_to_gallery', 'on');
+        if($include_content_to_gallery =="on"){            
+            $return['images_gallery'] = array_merge($return['images_gallery'],$return['images_content']);
+        }
 
-        // get all image in entry-content
-        $include_gallery = get_option('adminz_import_content_product_auto_gallery', 'on');
-        $contentclass = get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description');
-        $imgs = $xpath->query("//*[contains(@class, '" . $contentclass . "')]//img");
-        if (!is_null($imgs)){
-            foreach ($imgs as $element){
-                $datasrc = "src";
-                if(substr( $element->getAttribute('src'), 0, 5 ) == "data:"){
-                    $datasrc = "data-src";
-                }
-                if($include_gallery =="on"){
-                    $return['post_thumbnail'][] = $this->fix_url($element->getAttribute($datasrc),$link);
-                }                
-                $return['content_thumbnail'][] = $this->fix_url($element->getAttribute($datasrc),$link);
-            }
-        }      
-        $return['post_thumbnail'] = array_values(array_unique($return['post_thumbnail']));
-        // product short_description        
+        // set all image array and thumbnail
+        $return['images_all'] = array_values(array_unique(array_merge($return['images_gallery'],$return['images_variations'],$return['images_content'])));
+
+        if(is_array($return['images_all']) and !empty($return['images_all'])){
+            $return['image_thumbnail'] = $return['images_all'][0];
+        }
+
+        // get product short_description        
         $excerpt_class = get_option('adminz_import_product_short_description', 'product-short-description');
         $excerpt = $xpath->query("//*[contains(@class, '".$header_class."')]//*[contains(@class, '".$excerpt_class."')]");
         if (!is_null($excerpt)) {
@@ -479,7 +490,7 @@ class ADMINZ_Import extends Adminz {
             }
         }
 
-        // product content 
+        // get product content 
         $contentclass = get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description');
         $content = $xpath->query("//*[contains(@class, '" . $contentclass . "')]");
         $remove_end = get_option('adminz_import_content_remove_end', 0);
@@ -633,7 +644,8 @@ class ADMINZ_Import extends Adminz {
         }        
         return $return;
     }
-    function replace_img_content($img_old_url,$image_new_id,$content){
+    function replace_img_content($link,$images_imported,$content){
+        if(empty($images_imported) or !is_array($images_imported)) return;
         $doc = new DOMDocument();
         libxml_use_internal_errors(true);
         $content_encode = mb_convert_encoding($content, 'HTML-ENTITIES', "UTF-8");
@@ -643,11 +655,12 @@ class ADMINZ_Import extends Adminz {
         $xpath = new DOMXpath($doc);
         $imgs = $xpath->query("//img");
 
+        $old_html = [];
+        $new_html = [];
         if (!is_null($imgs)) {
-            foreach ($imgs as $img) {  
-            
-                if ($img->getAttribute('src') == $img_old_url){                    
-                    $old_html = $doc->saveHTML($img);                    
+            foreach ($imgs as $img) {
+                $imgurl = $this->fix_url($img->getAttribute('src'),$link);
+                if (array_key_exists($imgurl, $images_imported)){
                     $width = $img->getAttribute('width')? $img->getAttribute('width') : "";
                     $height = $img->getAttribute('height')? $img->getAttribute('height') : "";
                     $class = $img->getAttribute('class')? $img->getAttribute('class') : "";
@@ -659,11 +672,12 @@ class ADMINZ_Import extends Adminz {
                     if($class){
                         $class = ['class'=>$class];
                     }
-                    $new = wp_get_attachment_image($image_new_id,$size,"",$class);
-                    $content = str_replace($old_html, $new, $content);
+                    $old_html[] = $doc->saveHTML($img);
+                    $new_html[] = wp_get_attachment_image($images_imported[$imgurl],$size,"",$class);
                 }
             }
         }
+        $content = str_replace($old_html, $new_html, $content);
         return $content;
     }
     function save_images($image_url, $posttitle) {
@@ -785,16 +799,6 @@ class ADMINZ_Import extends Adminz {
                         }                           
                         return false;
                     })
-                    $('.run_import_single').click(function(){                        
-                        var link = $(this).closest("td").find("input").val();
-                        if(link){
-                            $(".data_test").html("");
-                            run_import_single(link,$(this).closest("td").find(".data_test"));
-                        }else{
-                            alert("Input link");
-                        }                           
-                        return false;
-                    })                  
                     $('.test_category').click(function(){
                         var link = $(this).closest("td").find("input").val();
                         if(link){
@@ -805,16 +809,6 @@ class ADMINZ_Import extends Adminz {
                         }
                         return false;
                     })
-                    $('.run_import_category').click(function(){
-                        var link = $(this).closest("td").find("input").val();
-                        if(link){
-                            $(".data_test").html("");
-                            run_import_category(link,$(this).closest("td").find(".data_test"));
-                        }else{
-                            alert("Input link");
-                        }
-                        return false;
-                    });
                     $('.test_product').click(function(){
                         var link = $(this).closest("td").find("input").val();
                         if(link){
@@ -830,6 +824,26 @@ class ADMINZ_Import extends Adminz {
                         if(link){
                             $(".data_test").html("");
                             test_category_product(link,$(this).closest("td").find(".data_test"));
+                        }else{
+                            alert("Input link");
+                        }
+                        return false;
+                    })
+                    $('.run_import_single').click(function(){                        
+                        var link = $(this).closest("td").find("input").val();
+                        if(link){
+                            $(".data_test").html("");
+                            run_import_single(link,$(this).closest("td").find(".data_test"));
+                        }else{
+                            alert("Input link");
+                        }                           
+                        return false;
+                    })
+                    $('.run_import_category').click(function(){
+                        var link = $(this).closest("td").find("input").val();
+                        if(link){
+                            $(".data_test").html("");
+                            run_import_category(link,$(this).closest("td").find(".data_test"));
                         }else{
                             alert("Input link");
                         }
@@ -854,7 +868,7 @@ class ADMINZ_Import extends Adminz {
                             alert("Input link");
                         }                           
                         return false;
-                    }) 
+                    })                     
                     function test_single(link,output){
                         $.ajax({
                             type : "post",
@@ -886,10 +900,13 @@ class ADMINZ_Import extends Adminz {
                                         if(data_test.post_thumbnail){
                                             for (var i = 0; i < data_test.post_thumbnail.length; i++) {
                                                 if(i==0){
-                                                    html_test +="<div><img src='"+data_test.post_thumbnail[i]+"'/></div>";
+                                                    html_test +="<div><img src='"+data_test.post_thumbnail[i]+"'/>"; html_test +="</div>";
                                                 }else{
                                                     html_test +='<img style="margin-right: 10px; height: 70px; border: 5px solid silver;" src="'+data_test.post_thumbnail[i]+'"/>';
                                                 }
+                                            }
+                                            for (var i = 0; i < data_test.post_thumbnail.length; i++) {
+                                                html_test +="<p><small>"+data_test.post_thumbnail[i]+"</small></p>";
                                             }
                                         }else{
                                             html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
@@ -914,80 +931,6 @@ class ADMINZ_Import extends Adminz {
 
                                     
                                     output.html(html_test);
-                                }
-                                else {
-                                    alert('There is an error');
-                                }
-                            },
-                            error: function( jqXHR, textStatus, errorThrown ){
-                                
-                                console.log( 'Administrator Z: The following error occured: ' + textStatus, errorThrown );
-                            }
-                        })
-                    }
-                    function run_import_single(link,output){
-                        var start = new Date().getTime();
-                        $.ajax({
-                            type : "post",
-                            dataType : "json",
-                            url : '<?php echo admin_url('admin-ajax.php'); ?>',
-                            data : {
-                                action: "run_import_single",
-                                link : link
-                            },
-                            context: this,
-                            beforeSend: function(){
-                                var html_run = '<div class="notice notice-alt updating-message"><p aria-label="Importing...">Importing...</p></div>';
-                                output.html(html_run);
-                            },
-                            success: function(response) {                                
-                                if(response.success) {
-                                    var end = new Date().getTime();
-                                    var html_run = "";
-                                    html_run += "<div class='notice notice-alt notice-success updated-message'>";
-                                    html_run += '<p aria-label="done">';
-                                    html_run += response.data;
-                                    html_run +="<code>"+ (end - start)/1000+" seconds</code>";
-                                    html_run += '</p>';
-                                    html_run +="</div>";
-                                    output.html(html_run);                                    
-                                }
-                                else {
-                                    alert('There is an error');
-                                }
-                            },
-                            error: function( jqXHR, textStatus, errorThrown ){
-                                
-                                console.log( 'Administrator Z: The following error occured: ' + textStatus, errorThrown );
-                            }
-                        })                        
-                    }
-                    function run_import_single_product(link,output){
-                        var start = new Date().getTime();
-                        $.ajax({
-                            type : "post",
-                            dataType : "json",
-                            url : '<?php echo admin_url('admin-ajax.php'); ?>',
-                            data : {
-                                action: "run_import_single_product",
-                                link : link
-                            },
-                            context: this,
-                            beforeSend: function(){                                
-                                var html_run = '<div class="notice notice-alt updating-message"><p aria-label="Importing...">Importing...</p></div>';
-                                output.html(html_run);
-                            },
-                            success: function(response) {                                
-                                if(response.success) {
-                                    var end = new Date().getTime();
-                                    var html_run = "";
-                                    html_run += "<div class='notice notice-alt notice-success updated-message'>";
-                                    html_run += '<p aria-label="done">';
-                                    html_run += response.data;
-                                    html_run +="<code>"+ (end - start)/1000+" seconds</code>";
-                                    html_run += '</p>';
-                                    html_run +="</div>";                                    
-                                    output.html(html_run);
                                 }
                                 else {
                                     alert('There is an error');
@@ -1043,52 +986,6 @@ class ADMINZ_Import extends Adminz {
                             }
                         })
                     }
-                    function run_import_category(link,output){
-                        $.ajax({
-                            type : "post",
-                            dataType : "json",
-                            url : '<?php echo admin_url('admin-ajax.php'); ?>',
-                            data : {
-                                action: "test_category",
-                                link : link
-                            },
-                            context: this,
-                            beforeSend: function(){
-                                var html_run = '<div class="notice notice-alt notice-warning updating-message"><p aria-label="Checking...">Checking...</p></div>';
-                                output.html(html_run);
-                            },
-                            success: function(response) {
-                                
-                                if(response.success) {
-                                    var data_test = JSON.parse(response.data);
-                                    var html_test = "";
-                                    html_test += "<div style='padding: 10px; background-color: white;'>";
-                                    html_test +='<table>';
-                                    for (var i = 0; i < data_test.length; i++) {                                            
-                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="_blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
-                                    }                                       
-                                    html_test +='</table>';
-                                    html_test +="</div>";                                       
-                                    output.html(html_test);
-
-                                    // foreach all item listed to run single import
-                                    var tr = output.find('table').find('tr');
-                                    tr.each(function(){
-                                        var link = ($(this).attr('data-link'));
-                                        var output = $(this).find("td.status");
-                                        run_import_single(link,output);
-                                    });
-                                }
-                                else {
-                                    alert('There is an error');
-                                }
-                            },
-                            error: function( jqXHR, textStatus, errorThrown ){
-                                
-                                console.log( 'Administrator Z: The following error occured: ' + textStatus, errorThrown );
-                            }
-                        })
-                    }
                     function test_product(link,output){
                         $.ajax({
                             type : "post",
@@ -1118,16 +1015,22 @@ class ADMINZ_Import extends Adminz {
                                         html_test +="<code>Thumbnail</code>";
                                         html_test +="<div>";
                                         
-                                        if(data_test.post_thumbnail){
-                                            for (var i = 0; i < data_test.post_thumbnail.length; i++) {
-                                                if(i==0){
-                                                    html_test +="<div><img style='width: 500px;' src='"+data_test.post_thumbnail[i]+"'/></div>";
-                                                }else{
-                                                    html_test +='<img style="margin-right: 10px; height: 100px; border: 5px solid silver;" src="'+data_test.post_thumbnail[i]+'"/>';
-                                                }
-                                            }
+                                        if(data_test.image_thumbnail){
+                                            html_test +="<div><img style='width: 500px;' src='"+data_test.image_thumbnail+"'/></div>";                                            
                                         }else{
                                             html_test +="<b style='color: white; background-color: red;'>Not found</b></br>";
+                                        }
+                                        html_test +="</div>";
+
+                                        // gallery 
+                                        html_test +="<code>Gallery</code>";
+                                        html_test +="<div>";
+                                        for (var i = 0; i < data_test.images_gallery.length; i++) {
+                                            if(i==0){
+                                                
+                                            }else{
+                                                html_test +='<img style="margin-right: 10px; height: 100px; border: 5px solid silver;" src="'+data_test.images_gallery[i]+'"/>';
+                                            }
                                         }
                                         html_test +="</div>";
 
@@ -1169,15 +1072,15 @@ class ADMINZ_Import extends Adminz {
                                                     html_test+= JSON.stringify(data_test.default_attribute);                                              
                                                 }
                                                 
-                                                html_test+= '<table>';
+                                                html_test+= '<table><tr>';
                                                 for (var i = 0; i < data_test.product_type_data.length; i++) {
                                                     var attr_image = '<img width="50px" src="'+data_test.product_type_data[i].image.url+'"/>';
                                                     var attr_name = Object.values(data_test.product_type_data[i].attributes);
                                                     var attr_price = data_test.product_type_data[i].display_price;
                                                     var attr_price_regular_sale = data_test.product_type_data[i].display_regular_price;
-                                                    html_test+='<tr> <td>'+attr_image+'</td> <td>'+attr_name+'</td> <td>'+attr_price+'</td><td><del>'+attr_price_regular_sale+'</del></td> </tr>';
+                                                    html_test+='<td><p>'+attr_image+'</p> <p>'+attr_name+'</p> <p>'+attr_price+'</p><p><del>'+attr_price_regular_sale+'</del></p></td>';
                                                 }
-                                                html_test +='</table>';
+                                                html_test +='</tr></table>';
                                             }
                                         }
                                         if(data_test.product_type == 'grouped'){
@@ -1256,6 +1159,126 @@ class ADMINZ_Import extends Adminz {
                                     }
 
                                     output.html(html_test);
+                                }
+                                else {
+                                    alert('There is an error');
+                                }
+                            },
+                            error: function( jqXHR, textStatus, errorThrown ){
+                                
+                                console.log( 'Administrator Z: The following error occured: ' + textStatus, errorThrown );
+                            }
+                        })
+                    }
+                    function run_import_single(link,output){
+                        var start = new Date().getTime();
+                        $.ajax({
+                            type : "post",
+                            dataType : "json",
+                            url : '<?php echo admin_url('admin-ajax.php'); ?>',
+                            data : {
+                                action: "run_import_single",
+                                link : link
+                            },
+                            context: this,
+                            beforeSend: function(){
+                                var html_run = '<div class="notice notice-alt updating-message"><p aria-label="Importing...">Importing...</p></div>';
+                                output.html(html_run);
+                            },
+                            success: function(response) {                                
+                                if(response.success) {
+                                    var end = new Date().getTime();
+                                    var html_run = "";
+                                    html_run += "<div class='notice notice-alt notice-success updated-message'>";
+                                    html_run += '<p aria-label="done">';
+                                    html_run += response.data;
+                                    html_run +="<code>"+ (end - start)/1000+" seconds</code>";
+                                    html_run += '</p>';
+                                    html_run +="</div>";
+                                    output.html(html_run);                                    
+                                }
+                                else {
+                                    alert('There is an error');
+                                }
+                            },
+                            error: function( jqXHR, textStatus, errorThrown ){
+                                
+                                console.log( 'Administrator Z: The following error occured: ' + textStatus, errorThrown );
+                            }
+                        })                        
+                    }
+                    function run_import_category(link,output){
+                        $.ajax({
+                            type : "post",
+                            dataType : "json",
+                            url : '<?php echo admin_url('admin-ajax.php'); ?>',
+                            data : {
+                                action: "test_category",
+                                link : link
+                            },
+                            context: this,
+                            beforeSend: function(){
+                                var html_run = '<div class="notice notice-alt notice-warning updating-message"><p aria-label="Checking...">Checking...</p></div>';
+                                output.html(html_run);
+                            },
+                            success: function(response) {
+                                
+                                if(response.success) {
+                                    var data_test = JSON.parse(response.data);
+                                    var html_test = "";
+                                    html_test += "<div style='padding: 10px; background-color: white;'>";
+                                    html_test +='<table>';
+                                    for (var i = 0; i < data_test.length; i++) {                                            
+                                        html_test +='<tr data-link="'+data_test[i]['post_url']+'"> <td class="status">Status</td><td><p>'+data_test[i]['post_title']+'</p><a target="_blank" href="'+data_test[i]['post_url']+'">Link</a></td></tr>';
+                                    }                                       
+                                    html_test +='</table>';
+                                    html_test +="</div>";                                       
+                                    output.html(html_test);
+
+                                    // foreach all item listed to run single import
+                                    var tr = output.find('table').find('tr');
+                                    tr.each(function(){
+                                        var link = ($(this).attr('data-link'));
+                                        var output = $(this).find("td.status");
+                                        run_import_single(link,output);
+                                    });
+                                }
+                                else {
+                                    alert('There is an error');
+                                }
+                            },
+                            error: function( jqXHR, textStatus, errorThrown ){
+                                
+                                console.log( 'Administrator Z: The following error occured: ' + textStatus, errorThrown );
+                            }
+                        })
+                    }
+                    function run_import_single_product(link,output){
+                        var start = new Date().getTime();
+                        $.ajax({
+                            type : "post",
+                            dataType : "json",
+                            url : '<?php echo admin_url('admin-ajax.php'); ?>',
+                            data : {
+                                action: "run_import_single_product",
+                                link : link
+                            },
+                            context: this,
+                            beforeSend: function(){                                
+                                var html_run = '<div class="notice notice-alt updating-message"><p aria-label="Importing...">Importing...</p></div>';
+                                output.html(html_run);
+                            },
+                            success: function(response) {                                
+                                if(response.success) {
+                                    var end = new Date().getTime();
+                                    var html_run = "";
+                                    html_run += "<div class='notice notice-alt notice-success updated-message'>";
+                                    html_run += '<p aria-label="done">';
+                                    html_run += response.data;
+                                    html_run +="<code>"+ (end - start)/1000+" seconds</code>";
+                                    html_run += '</p>';
+                                    html_run +="</div>";                                    
+                                    output.html(html_run);
                                 }
                                 else {
                                     alert('There is an error');
@@ -1480,7 +1503,7 @@ class ADMINZ_Import extends Adminz {
 
                         <p>
                             <input type="text" name="adminz_import_product_thumbnail" placeholder='woocommerce-product-gallery__image' value="<?php echo get_option('adminz_import_product_thumbnail', 'woocommerce-product-gallery__image'); ?>" />
-                            <code>Thumbnail wrapper class</code>
+                            <code>Gallery wrapper class</code>
                         </p>
                         <!-- <p>
                             <input type="text" name="adminz_import_product_gallery" placeholder='product-thumbnails thumbnails' value="<?php echo get_option('adminz_import_product_gallery', 'product-thumbnails thumbnails'); ?>" />
@@ -1563,10 +1586,10 @@ class ADMINZ_Import extends Adminz {
                     </th>
                     <td>
                         <p>                         
-                            <textarea rows="3" cols="40%" class="input-text wide-input " type="text" name="adminz_import_content_replace_from" ><?php echo get_option('adminz_import_content_replace_from', ""); ?></textarea><br>
+                            <textarea rows="3" cols="40%" class="input-text wide-input " type="text" name="adminz_import_content_replace_from" placeholder="String 1 to search&#10;String 2 to search&#10;" ><?php echo get_option('adminz_import_content_replace_from', ""); ?></textarea><br>
                         </p>
                         <p>             
-                            <textarea rows="3" cols="40%" class="input-text wide-input " type="text" name="adminz_import_content_replace_to" ><?php echo get_option('adminz_import_content_replace_to', ""); ?></textarea><br>
+                            <textarea rows="3" cols="40%" class="input-text wide-input " type="text" name="adminz_import_content_replace_to" placeholder="String 1 to replace&#10;String 2 to replace&#10;"><?php echo get_option('adminz_import_content_replace_to', ""); ?></textarea><br>
                         </p>
                         <code>Each character is one line</code>
                     </td>
@@ -1587,21 +1610,28 @@ class ADMINZ_Import extends Adminz {
                     <td>
                         <p>
                             <label>
-                                <input type="checkbox" name="adminz_import_content_product_auto_gallery" <?php echo get_option('adminz_import_content_product_auto_gallery','on') == 'on' ? 'checked' : ''; ?> />
-                                <code>Add entry content images to gallery</code>
+                                <input type="checkbox" name="adminz_import_product_include_image_content_to_gallery" <?php echo get_option('adminz_import_product_include_image_content_to_gallery','on') == 'on' ? 'checked' : ''; ?> />
+                                <code>Include entry content images to gallery</code>
+                            </label>
+                        </p>
+                        <p>
+                            <label>
+                                <input type="checkbox" name="adminz_import_product_include_image_variations_to_gallery" <?php echo get_option('adminz_import_product_include_image_variations_to_gallery','on') == 'on' ? 'checked' : ''; ?> />
+                                <code>Include variations images to gallery</code>
                             </label>
                         </p>
                     </td>
                 </tr>
                 <tr valign="top">                   
                     <th>
-                        Small thumbnail
+                        Small thumbnail url fix
                     </th>
                     <td>
                         <p>                         
-                            <textarea rows="3" cols="40%" class="input-text wide-input " placeholder="Ex: _150w150h" type="text" name="adminz_import_thumbnail_url_remove_string" ><?php echo get_option('adminz_import_thumbnail_url_remove_string', ""); ?></textarea><br>
+                            <textarea rows="3" cols="40%" class="input-text wide-input " placeholder="-280x280&#10;-400x400" type="text" name="adminz_import_thumbnail_url_remove_string" ><?php echo get_option('adminz_import_thumbnail_url_remove_string', ""); ?></textarea><br>
                         </p>                        
-                        <code>Usefull to get full image from image size small | Each character is one line</code>
+                        <span>https://domain.com/image_folder/image_name<code>-280x280</code>.jpg</span><br>
+                        <span>https://domain.com/image_folder/image_name<code>-400x400</code>.jpg</span><br>
                     </td>
                 </tr>
                 <tr valign="top">                   
@@ -1672,7 +1702,8 @@ class ADMINZ_Import extends Adminz {
         register_setting($this->options_group, 'adminz_import_content_remove_end');
         register_setting($this->options_group, 'adminz_import_content_replace_from');
         register_setting($this->options_group, 'adminz_import_content_replace_to');        
-        register_setting($this->options_group, 'adminz_import_content_product_auto_gallery');
+        register_setting($this->options_group, 'adminz_import_product_include_image_content_to_gallery');
+        register_setting($this->options_group, 'adminz_import_product_include_image_variations_to_gallery');        
         register_setting($this->options_group, 'adminz_import_content_product_decimal_seprator');
     }
 }
