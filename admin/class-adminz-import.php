@@ -451,11 +451,13 @@ class ADMINZ_Import extends Adminz {
 
         // images on gallery
         $image_class = get_option('adminz_import_product_thumbnail', 'woocommerce-product-gallery__image');
+        $image_gallery_tag = get_option('adminz_import_product_thumbnail_tag', "img");
+        $image_gallery_data_attr = get_option('adminz_import_product_thumbnail_data_attr', "data-src");
         if($image_class){
-            $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//img");
+            $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//".$image_gallery_tag);
             if (!is_null($imgs)){
                 foreach ($imgs as $element){  
-                    $return['images_gallery'][] = $this->fix_url($element->getAttribute('data-src'),$link);
+                    $return['images_gallery'][] = $this->fix_url($element->getAttribute($image_gallery_data_attr),$link);                    
                 }
             }
         }
@@ -492,20 +494,22 @@ class ADMINZ_Import extends Adminz {
 
         // get product content 
         $contentclass = get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description');
-        $content = $xpath->query("//*[contains(@class, '" . $contentclass . "')]");
-        $remove_end = get_option('adminz_import_content_remove_end', 0);
-        $remove_first = get_option('adminz_import_content_remove_first', 0);
-        if (!is_null($content)){
-            foreach ($content as $element){
-                $nodes = $element->childNodes;
-                foreach ($nodes as $key => $node){
-                    if ($key <= (count($nodes) - $remove_end - 1) and $key >= ($remove_first))
-                    {
-                        $return['post_content'] .= $this->fix_content($doc->saveHTML($node) , $link);
+        if($contentclass){
+            $content = $xpath->query("//*[contains(@class, '" . $contentclass . "')]");
+            $remove_end = get_option('adminz_import_content_remove_end', 0);
+            $remove_first = get_option('adminz_import_content_remove_first', 0);
+            if (!is_null($content)){
+                foreach ($content as $element){
+                    $nodes = $element->childNodes;
+                    foreach ($nodes as $key => $node){
+                        if ($key <= (count($nodes) - $remove_end - 1) and $key >= ($remove_first))
+                        {
+                            $return['post_content'] .= $this->fix_content($doc->saveHTML($node) , $link);
+                        }
                     }
                 }
             }
-        }
+        }        
         return $return;
     }
     function get_category($link) {
@@ -1481,7 +1485,7 @@ class ADMINZ_Import extends Adminz {
                             <code>Price wrapper class</code>
                         </p>
                         <p>
-                            <input type="text" name="adminz_import_product_prices" placeholder='woocommerce-Price-amount' value="<?php echo get_option('adminz_import_product_prices', 'woocommerce-Price-amount'); ?>" />
+                            &rdsh;<input type="text" name="adminz_import_product_prices" placeholder='woocommerce-Price-amount' value="<?php echo get_option('adminz_import_product_prices', 'woocommerce-Price-amount'); ?>" />
                             <code>Prices class</code>
                         </p>
                         <p>
@@ -1504,6 +1508,14 @@ class ADMINZ_Import extends Adminz {
                         <p>
                             <input type="text" name="adminz_import_product_thumbnail" placeholder='woocommerce-product-gallery__image' value="<?php echo get_option('adminz_import_product_thumbnail', 'woocommerce-product-gallery__image'); ?>" />
                             <code>Gallery wrapper class</code>
+                        </p>
+                        <p>
+                            &rdsh;<input type="text" name="adminz_import_product_thumbnail_tag" placeholder='img' value="<?php echo get_option('adminz_import_product_thumbnail_tag', 'img'); ?>" />
+                            <code>Gallery item tag</code>
+                        </p>
+                        <p>
+                            &rdsh;<input type="text" name="adminz_import_product_thumbnail_data_attr" placeholder='data-src' value="<?php echo get_option('adminz_import_product_thumbnail_data_attr', 'data-src'); ?>" />
+                            <code>Gallery item data attribute</code>
                         </p>
                         <!-- <p>
                             <input type="text" name="adminz_import_product_gallery" placeholder='product-thumbnails thumbnails' value="<?php echo get_option('adminz_import_product_gallery', 'product-thumbnails thumbnails'); ?>" />
@@ -1680,7 +1692,9 @@ class ADMINZ_Import extends Adminz {
         register_setting($this->options_group, 'adminz_import_product_title');
         register_setting($this->options_group, 'adminz_import_product_price');
         register_setting($this->options_group, 'adminz_import_product_prices');
-        register_setting($this->options_group, 'adminz_import_product_thumbnail');         
+        register_setting($this->options_group, 'adminz_import_product_thumbnail');
+        register_setting($this->options_group, 'adminz_import_product_thumbnail_tag');
+        register_setting($this->options_group, 'adminz_import_product_thumbnail_data_attr');        
         //register_setting($this->options_group, 'adminz_import_product_gallery');
         register_setting($this->options_group, 'adminz_import_product_short_description');
         register_setting($this->options_group, 'adminz_import_product_content');

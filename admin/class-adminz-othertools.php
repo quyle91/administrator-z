@@ -127,7 +127,7 @@ class ADMINZ_OtherTools extends Adminz
 				    	}
 					    return $markup;
 					}, 10, 6 );
-				    $html_item['replaced_url'] = wp_get_attachment_link($attach_id,"full",false,false,false,['target'=>'_blank']);
+				    $html_item['replaced_url'] = wp_get_attachment_link($attach_id,"thumbnail",false,false,false,['target'=>'_blank']);
 				    $filter_blank = false;
 
 
@@ -205,12 +205,20 @@ class ADMINZ_OtherTools extends Adminz
 				            			html_run +="<th>Replace status</th>";
 				            		html_run +="</tr>";
 					            	for (var i = 0; i < response.data.length; i++) {
+					            		var status = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Not found in website gallery!</p></div>';
+					            		if(response.data[i].replaced == true){
+					            			status = "<div class='notice notice-alt notice-success updated-message'>"+'<p aria-label="done">Replaced!'+"</p></div>";
+					            		}
+					            		var imgpreview = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Not found in website gallery!</p></div>';
+					            		if(response.data[i].replaced_url){
+					            			imgpreview = response.data[i].replaced_url;
+					            		}
 					            		html_run +="<tr>";
-					            			html_run +="<td>"+response.data[i].replaced_url+"</td>";
+					            			html_run +="<td>"+imgpreview+"</td>";
 					            			html_run +="<td>"+response.data[i].name+"</td>";
 					            			html_run +="<td>"+response.data[i].type+"</td>";
 					            			html_run +="<td>"+response.data[i].type_support+"</td>";
-					            			html_run +="<td>"+response.data[i].replaced+"</td>";
+					            			html_run +="<td>"+status+"</td>";
 					            		html_run +="</tr>";
 					            	}
 					            	html_run +="</table>";
