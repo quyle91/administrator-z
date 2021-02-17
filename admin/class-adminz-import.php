@@ -424,8 +424,15 @@ class ADMINZ_Import extends Adminz {
         }        
         
         $title_class = get_option('adminz_import_product_title', 'product-title');
-        if($title_class and $header_class){
-            $title = $xpath->query("//*[contains(@class, '" . $header_class . "')]//*[contains(@class, '" . $title_class . "')]");
+        $title_tag = get_option('adminz_import_product_title_tag', '');
+        
+        if($header_class){
+            if($title_tag){
+                $title = $xpath->query("//*[contains(@class, '" . $header_class . "')]//".$title_tag);
+            }else{
+                $title = $xpath->query("//*[contains(@class, '" . $header_class . "')]//*[contains(@class, '" . $title_class . "')]");
+            }
+            
             if (!is_null($title)){
                 foreach ($title as $element){
                     $nodes = $element->childNodes;
@@ -739,10 +746,16 @@ class ADMINZ_Import extends Adminz {
         preg_match('/(http(|s)):\/\/(.*?)\//si', $link, $output);
         $domain = $output[0];
 
+        // fist not http/https
+        if ($url[0] != "h" and $url[0] != "t" and $url[0] != "t" and $url[0] != "p"){
+            $url = "/". $url;
+        }
+
+        // first : //
         if ($url[0] == "/" and $url[1] == "/"){
             $url = "https:". $url;
         }
-
+        // first : /
         if ($url[0] == "/"){
             $url = $domain . substr($url,1);
         }    
@@ -918,7 +931,7 @@ class ADMINZ_Import extends Adminz {
                                     var html_test = "";
 
                                     if(!data_test.post_title){
-                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Nothing found! Please check url or CSS classes check</p></div>';
+                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Title not found! Please check url or CSS classes check</p></div>';
                                     }else{
                                         html_test += "<div style='padding: 10px; background-color: white;'>"; 
 
@@ -990,7 +1003,7 @@ class ADMINZ_Import extends Adminz {
                                     console.log(data_test);
                                     var html_test = "";
                                     if(!data_test.length){
-                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Nothing found! Please check url or CSS classes check</p></div>';
+                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Title not found! Please check url or CSS classes check</p></div>';
                                     }else{
                                         html_test += "<div style='padding: 10px; background-color: white;'>";
                                         html_test +='<table>';
@@ -1034,7 +1047,7 @@ class ADMINZ_Import extends Adminz {
                                     var html_test = "";
 
                                     if(!data_test.post_title){
-                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Nothing found! Please check url or CSS classes check</p></div>';
+                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Title not found! Please check url or CSS classes check</p></div>';
                                     }else{
                                         html_test += "<div style='padding: 10px; background-color: white;'>"; 
 
@@ -1179,7 +1192,7 @@ class ADMINZ_Import extends Adminz {
                                     console.log(data_test);
                                     var html_test = "";
                                     if(!data_test.length){
-                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Nothing found! Please check url or CSS classes check</p></div>';
+                                        html_test = '<div class="notice notice-alt notice-warning upload-error-message"><p aria-label="Checking...">Title not found! Please check url or CSS classes check</p></div>';
                                     }else{
                                         html_test += "<div style='padding: 10px; background-color: white;'>";
                                         html_test +='<table>';
@@ -1509,6 +1522,10 @@ class ADMINZ_Import extends Adminz {
                             <code>Title wrapper class</code>
                         </p>
                         <p>
+                            &rdsh;&rdsh;<input type="text" name="adminz_import_product_title_tag" placeholder='' value="<?php echo get_option('adminz_import_product_title_tag', ''); ?>" />
+                            <code>Or Title tag</code><em> Leave empty if not using.</em>
+                        </p>
+                        <p>
                             &rdsh;<input type="text" name="adminz_import_product_price" placeholder='price-wrapper' value="<?php echo get_option('adminz_import_product_price', 'price-wrapper'); ?>" />
                             <code>Price wrapper class</code>
                         </p>
@@ -1621,10 +1638,10 @@ class ADMINZ_Import extends Adminz {
                     </th>
                     <td>
                         <p>                         
-                            <textarea rows="3" cols="40%" class="input-text wide-input " type="text" name="adminz_import_content_replace_from" placeholder="Administrator Z&#10;Foo&#10;Bar" ><?php echo get_option('adminz_import_content_replace_from', "Administrator Z\nFoo\nBar"); ?></textarea><br>
+                            <textarea rows="7" cols="100%" class="input-text wide-input " type="text" name="adminz_import_content_replace_from" placeholder="Administrator Z&#10;Foo&#10;Bar" ><?php echo get_option('adminz_import_content_replace_from', "Administrator Z\nFoo\nBar"); ?></textarea><br>
                         </p>
                         <p>             
-                            <textarea rows="3" cols="40%" class="input-text wide-input " type="text" name="adminz_import_content_replace_to" placeholder="Your strings&#10;Foo 2&#10;Bar 2"><?php echo get_option('adminz_import_content_replace_to', "Your strings\nFoo 2\nBar 2"); ?></textarea><br>
+                            <textarea rows="7" cols="100%" class="input-text wide-input " type="text" name="adminz_import_content_replace_to" placeholder="Your strings&#10;Foo 2&#10;Bar 2"><?php echo get_option('adminz_import_content_replace_to', "Your strings\nFoo 2\nBar 2"); ?></textarea><br>
                         </p>
                         <code>Each character is one line</code>
                     </td>
@@ -1713,6 +1730,7 @@ class ADMINZ_Import extends Adminz {
         // single product
         register_setting($this->options_group, 'adminz_import_product_header_title');
         register_setting($this->options_group, 'adminz_import_product_title');
+        register_setting($this->options_group, 'adminz_import_product_title_tag');
         register_setting($this->options_group, 'adminz_import_product_price');
         register_setting($this->options_group, 'adminz_import_product_prices');
         register_setting($this->options_group, 'adminz_import_product_thumbnail');
