@@ -747,7 +747,7 @@ class ADMINZ_Import extends Adminz {
         $domain = $output[0];
 
         // fist not http/https
-        if ($url[0] != "h" and $url[0] != "t" and $url[0] != "t" and $url[0] != "p"){
+        if ($url[0] !=="/" and $url[0] != "h" and $url[0] != "t" and $url[0] != "t" and $url[0] != "p"){
             $url = "/". $url;
         }
 
@@ -758,7 +758,8 @@ class ADMINZ_Import extends Adminz {
         // first : /
         if ($url[0] == "/"){
             $url = $domain . substr($url,1);
-        }    
+        }  
+        
         $remove_string = get_option('adminz_import_thumbnail_url_remove_string',"-280x280\n-400x400\n-800x800");
         if ($remove_string){
             $url = str_replace(
