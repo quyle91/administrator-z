@@ -28,7 +28,8 @@ class ADMINZ_DefaultOptions extends Adminz {
 		}
 	}
 	function init(){
-		$adminz_autoupdate = get_option('adminz_autoupdate',array());
+		$adminz_autoupdate = get_option('adminz_autoupdate',array('update_core', 'update_plugin', 'update_theme', 'update_translation'));
+		
 		if(!$adminz_autoupdate){
 			$adminz_autoupdate = array();
 		}
@@ -109,7 +110,7 @@ class ADMINZ_DefaultOptions extends Adminz {
 					<th scope="row">Core updates</th>
 					<td>
 						<?php 
-						$adminz_autoupdate = get_option( 'adminz_autoupdate', array() );
+						$adminz_autoupdate = get_option( 'adminz_autoupdate', array('update_core', 'update_plugin', 'update_theme', 'update_translation') );
 						if(!$adminz_autoupdate){
 							$adminz_autoupdate = array();
 						}

@@ -88,13 +88,16 @@ class ADMINZ_Flatsome extends Adminz {
 			}
 		}
 	}
-	function flatsome_action_hook(){
+	function flatsome_action_hook(){		
 		$this->flatsome_actions;
 		foreach ($this->flatsome_actions as $action) {
 			$get_option = get_option( 'adminz_'.$action,'' );
-			if($get_option){
-				add_action($action, function () use($get_option){echo do_shortcode($get_option);});
+			if($get_option){				
+				add_action($action, function () use($get_option){					
+					echo do_shortcode(html_entity_decode($get_option));
+				});
 			}
+			
 		}
 	}
 	function flatsome_filter_hook(){
@@ -335,6 +338,7 @@ class ADMINZ_Flatsome extends Adminz {
 	        		</th>
 	        		<td>
 	        			<p>type <code>[adminz_test]</code> to test</p>
+	        			<em>Note: Replace <code>"</code> to <code>&#x26;#x22;</code> </em>
 	        		</td>
 	        	</tr>
 	        	<?php 
