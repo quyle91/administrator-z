@@ -5,7 +5,7 @@ Donate link: http://paypal.me/quyle91
 Requires at least: 4.0
 Tested up to: 5.6
 Requires PHP: 5.6
-Stable tag: 1.4
+Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,6 +25,7 @@ Feature functions:
 7. Some Elementor widget are added
 8. Tool Import post/ product content from external url
 9. Replace image keep ID & URL
+10. Custom unlimited fonts
 
 Setting page plugin: Tool->Administrator Z
 
@@ -41,6 +42,10 @@ For more details you can send mail with your suggestions, recommendation to quyl
 == Screenshots ==
 
 == Changelog ==
+
+= 1.5 = 
+* Auto update is default settings when active plugins
+* New: tool custom font 
 
 = 1.4 =
 

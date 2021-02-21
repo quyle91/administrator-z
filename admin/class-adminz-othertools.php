@@ -9,8 +9,7 @@ class ADMINZ_OtherTools extends Adminz
 	function __construct() {		
 		add_filter( 'adminz_setting_tab', [$this,'register_tab']);		
 		add_action( 'init', [$this, 'load_shortcodes'] );	
-		add_action( 'wp_ajax_file_upload', [$this,'file_upload_callback']);
-		add_action( 'wp_ajax_nopriv_file_upload', [$this,'file_upload_callback']);
+		add_action( 'wp_ajax_file_upload', [$this,'file_upload_callback']);		
 	}
 	function load_shortcodes(){
 		$shortcodefiles = glob(ADMINZ_DIR.'shortcodes/otheroptions*.php');
@@ -178,11 +177,12 @@ class ADMINZ_OtherTools extends Adminz
 					    $('body').on('change', '#replace_image', function() {
 					        $this = $(this);
 					        file_obj = $this.prop('files');
+					        //console.log(file_obj);
 					        form_data = new FormData();
 					        for(i=0; i<file_obj.length; i++) {
 					            form_data.append('file[]', file_obj[i]);
 					        }
-					        form_data.append('action', 'file_upload');					 		
+					        form_data.append('action', 'file_upload');
 					        $.ajax({
 					            url : '<?php echo admin_url('admin-ajax.php'); ?>',
 					            type: 'POST',

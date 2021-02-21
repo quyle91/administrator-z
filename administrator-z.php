@@ -2,7 +2,7 @@
 /*
 Plugin Name: Administrator Z
 Description: Lots of tools for quick website setup.
-Version: 1.4
+Version: 1.5
 Author: Quyle91
 Author URI: https://quyle91.github.io/
 License: GPLv2 or later
@@ -19,7 +19,7 @@ function adminz_namespace() {
 	new Adminz\Admin\Adminz;
 	new Adminz\Admin\ADMINZ_ThemeOptions;
 	new Adminz\Admin\ADMINZ_DefaultOptions;
-	new Adminz\Admin\ADMINZ_Styles;
+	new Adminz\Admin\ADMINZ_Fonts;
 	new Adminz\Admin\ADMINZ_ContactGroup;
 	new Adminz\Admin\ADMINZ_Flatsome;
 	new Adminz\Admin\ADMINZ_Elementor;
