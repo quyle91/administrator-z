@@ -82,13 +82,15 @@ class ADMINZ_Fonts extends Adminz {
 		return $tabs;
 	}
 	function register_option_setting() {
-		register_setting( $this->options_group, 'adminz_choose_font_lato' );	    
+		register_setting( $this->options_group, 'adminz_fonts_uploaded' );
+		register_setting( $this->options_group, 'adminz_choose_font_lato' );
 	}
 	function get_fields(){
 		ob_start();
 		$font_files = glob(wp_upload_dir()['basedir'].$this->font_upload_dir.'/*');
 		if(!empty($font_files) and is_array($font_files)){
 			?>
+			<textarea name="adminz_fonts_uploaded"><?php echo get_option('adminz_fonts_uploaded',''); ?></textarea>
 			<div style="padding: 10px; background: white;">            						
 				<table>
 					<tr>
@@ -107,7 +109,7 @@ class ADMINZ_Fonts extends Adminz {
 								</tr>
 								<tr>
 									<td><code>font-family:</code></td>
-									<td><input type="" name=""></td>
+									<td><input id="13456" type="" name=""></td>
 								</tr>
 								<tr>
 									<td><code>font-weight:</code></td>
@@ -148,7 +150,12 @@ class ADMINZ_Fonts extends Adminz {
 	function tab_scripts(){
 		?>
 		<script type="text/javascript">
-			jQuery(function($) {
+			jQuery(function($) {				
+				fill_data_fields();
+				function fill_data_fields(){
+					var data_fonts = $('textarea[name="adminz_fonts_uploaded"]').val();
+					$(".font-face-attributes input").val(data_fonts);
+				}
 				get_fields();
 				function get_fields(){
 					$(".get_fields").html("");
@@ -164,13 +171,17 @@ class ADMINZ_Fonts extends Adminz {
                         success: function(response) {
                         	if(response.data.length){
                         		$(".get_fields").html(response.data);
-                        	}			                        	
+                        	}
+                        	fill_data_fields();
                         },
                         error: function( jqXHR, textStatus, errorThrown ){
                         	console.log( 'Administrator Z: The following error occured: ' + textStatus, errorThrown );
                         }
                     })
-				}						
+				}	
+				$('body').on('change', '.font-face-attributes input', function() {
+					console.log($(this).val());
+				});					
 			    $('body').on('click', '.delete_file_font', function() {
 		        	var font_path = $(this).data("font");
 		        	$.ajax({

@@ -337,8 +337,7 @@ class ADMINZ_Flatsome extends Adminz {
 	        			Action name
 	        		</th>
 	        		<td>
-	        			<p>type <code>[adminz_test]</code> to test</p>
-	        			<em>Note: Replace <code>"</code> to <code>&#x26;#x22;</code> </em>
+	        			<p>type <code>[adminz_test]</code> to test</p>	        			
 	        		</td>
 	        	</tr>
 	        	<?php 
@@ -349,7 +348,7 @@ class ADMINZ_Flatsome extends Adminz {
 		        			<?php echo $value; ?>
 		        		</th>
 		        		<td>
-		        			<input type="text" name="adminz_<?php echo $value; ?>" value="<?php echo get_option( 'adminz_'.$value ,'' ); ?>" />
+		        			<textarea cols="70" rows="1" name="adminz_<?php echo $value; ?>"><?php echo get_option( 'adminz_'.$value ,'' ); ?></textarea>
 		        		</td>
 		        	</tr>
 	        		<?php
