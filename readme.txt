@@ -24,8 +24,8 @@ Feature functions:
 6. Some UX Builder shortcodes are added
 7. Some Elementor widget are added
 8. Tool Import post/ product content from external url
-9. Replace image keep ID & URL
-10. Custom unlimited fonts
+9. Tool Replace image keep ID & URL
+10. Tool Add custom fonts
 
 Setting page plugin: Tool->Administrator Z
 

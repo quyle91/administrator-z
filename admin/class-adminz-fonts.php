@@ -10,6 +10,7 @@ class ADMINZ_Fonts extends Adminz {
 		add_filter( 'adminz_setting_tab', [$this,'register_tab']);
 		add_action(	'admin_init', [$this,'register_option_setting'] );
 		add_action( 'wp_head', [$this,'enqueue_lato'],101);
+		add_action( 'wp_head', [$this,'enqueue_custom_font'],101);
 		add_action( 'wp_ajax_file_upload', [$this,'file_upload_callback']);	
 		add_action( 'wp_ajax_delete_file', [$this, 'delete_file']);
 		add_action( 'wp_ajax_get_fields', [$this, 'get_fields']);
@@ -83,6 +84,7 @@ class ADMINZ_Fonts extends Adminz {
 	}
 	function register_option_setting() {
 		register_setting( $this->options_group, 'adminz_fonts_uploaded' );
+		register_setting( $this->options_group, 'adminz_custom_css_fonts' );
 		register_setting( $this->options_group, 'adminz_choose_font_lato' );
 	}
 	function get_fields(){
@@ -90,7 +92,7 @@ class ADMINZ_Fonts extends Adminz {
 		$font_files = glob(wp_upload_dir()['basedir'].$this->font_upload_dir.'/*');
 		if(!empty($font_files) and is_array($font_files)){
 			?>
-			<textarea name="adminz_fonts_uploaded"><?php echo get_option('adminz_fonts_uploaded',''); ?></textarea>
+			<textarea cols="100" rows="10" name="adminz_fonts_uploaded"><?php echo get_option('adminz_fonts_uploaded',''); ?></textarea>
 			<div style="padding: 10px; background: white;">            						
 				<table>
 					<tr>
@@ -102,26 +104,26 @@ class ADMINZ_Fonts extends Adminz {
 					?>
 					<tr>
 						<td>
-							<table class="font-face-attributes">
+							<table class="font-face-attributes" data-font="<?php echo wp_upload_dir()['baseurl'].$this->font_upload_dir.'/'.basename($font); ?>">
 								<tr>
 									<td><code>src:</code></td>
-									<td><code>url("<?php echo wp_upload_dir()['baseurl'].$this->font_upload_dir.'/'.basename($font); ?>");</code></td>
+									<td><code><?php echo wp_upload_dir()['baseurl'].$this->font_upload_dir.'/'.basename($font); ?></code></td>
 								</tr>
 								<tr>
 									<td><code>font-family:</code></td>
-									<td><input id="13456" type="" name=""></td>
+									<td><input type="" name="font-family" required></td>
 								</tr>
 								<tr>
 									<td><code>font-weight:</code></td>
-									<td><input type="" name=""></td>
+									<td><input type="" name="font-weight" required></td>
 								</tr>
 								<tr>
 									<td><code>font-style:</code></td>
-									<td><input type="" name=""></td>
+									<td><input type="" name="font-style" required></td>
 								</tr>
 								<tr>
 									<td><code>font-stretch:</code></td>
-									<td><input type="" name=""></td>
+									<td><input type="" name="font-stretch" required></td>
 								</tr>
 							</table>            								
 						</td>
@@ -132,7 +134,11 @@ class ADMINZ_Fonts extends Adminz {
 					<?php					
 				}
 			?>
-			</table>
+				<tr>
+					<td><textarea style="width: 100%; background: #f2f2f2; border: 3px solid gray;" rows="10" name="adminz_custom_css_fonts"><?php echo get_option('adminz_custom_css_fonts',''); ?></textarea></td>
+					<td></td>
+				</tr>
+			</table>			
 			</div>
 			<style type="text/css">
 				table.font-face-attributes td,
@@ -150,11 +156,18 @@ class ADMINZ_Fonts extends Adminz {
 	function tab_scripts(){
 		?>
 		<script type="text/javascript">
-			jQuery(function($) {				
-				fill_data_fields();
+			jQuery(function($) {								
 				function fill_data_fields(){
 					var data_fonts = $('textarea[name="adminz_fonts_uploaded"]').val();
-					$(".font-face-attributes input").val(data_fonts);
+					data_fonts = JSON.parse(data_fonts);
+					for (var i = 0; i < data_fonts.length; i++) {
+						var font_key = data_fonts[i][0];
+						var table_fonts = $('.font-face-attributes[data-font="'+data_fonts[i][0]+'"');
+						table_fonts.find('input[name="font-family"]').val(data_fonts[i][1]);
+						table_fonts.find('input[name="font-weight"]').val(data_fonts[i][2]);
+						table_fonts.find('input[name="font-style"]').val(data_fonts[i][3]);
+						table_fonts.find('input[name="font-stretch"]').val(data_fonts[i][4]);
+					}
 				}
 				get_fields();
 				function get_fields(){
@@ -179,8 +192,23 @@ class ADMINZ_Fonts extends Adminz {
                         }
                     })
 				}	
-				$('body').on('change', '.font-face-attributes input', function() {
-					console.log($(this).val());
+				$('body').on('keyup', '.font-face-attributes input', function() {	
+					var fonts_uploaded = [];
+					$(".font-face-attributes").each(function(){
+						var data_font = $(this).data('font');
+						var font_family = $(this).find('input[name="font-family"]').val();
+						var font_weight = $(this).find('input[name="font-weight"]').val();
+						var font_style = $(this).find('input[name="font-style"]').val();
+						var font_stretch = $(this).find('input[name="font-stretch"]').val();
+						fonts_uploaded.push([
+							data_font,
+							font_family,
+							font_weight,
+							font_style,
+							font_stretch,
+							]);						
+					});					
+					$('textarea[name="adminz_fonts_uploaded"]').val(JSON.stringify(fonts_uploaded));
 				});					
 			    $('body').on('click', '.delete_file_font', function() {
 		        	var font_path = $(this).data("font");
@@ -304,6 +332,33 @@ class ADMINZ_Fonts extends Adminz {
 		<?php
 		echo $this->tab_scripts();
 		return ob_get_clean();
+	}
+	function enqueue_custom_font(){
+		$adminz_fonts_uploaded = get_option( 'adminz_fonts_uploaded','' );
+		$adminz_fonts_uploaded = json_decode( $adminz_fonts_uploaded );
+		$adminz_custom_css_fonts = get_option( 'adminz_custom_css_fonts','' );
+		ob_start();
+		if(!empty($adminz_fonts_uploaded) and is_array($adminz_fonts_uploaded)){			
+			?>
+			<style id="adminz_custom_fonts" type="text/css">
+				<?php foreach ($adminz_fonts_uploaded as $font) {
+					?>
+					@font-face {
+						src: url(<?php echo $font[0]; ?>);
+					  	font-family: <?php echo $font[1]; ?>;
+					  	font-weight: <?php echo $font[2]; ?>;
+					  	font-style: <?php echo $font[3]; ?>;
+					  	font-stretch: <?php echo $font[4]; ?>;
+					}
+					<?php
+				} ?>
+
+				<?php if($adminz_custom_css_fonts){ echo $adminz_custom_css_fonts; } ?>
+			</style>
+			<?php
+		}
+		$buffer = ob_get_clean();
+ 		echo str_replace(array("\r\n", "\r", "\n", "\t", '  ', '    ', '    '), '', $buffer);
 	}
 	function enqueue_lato(){
  		ob_start();
