@@ -9,7 +9,7 @@ class ADMINZ_OtherTools extends Adminz
 	function __construct() {		
 		add_filter( 'adminz_setting_tab', [$this,'register_tab']);		
 		add_action( 'init', [$this, 'load_shortcodes'] );	
-		add_action( 'wp_ajax_file_upload', [$this,'file_upload_callback']);		
+		add_action( 'wp_ajax_adminz_ot_upload_image', [$this,'adminz_ot_upload_image_callback']);		
 	}
 	function load_shortcodes(){
 		$shortcodefiles = glob(ADMINZ_DIR.'shortcodes/otheroptions*.php');
@@ -28,7 +28,7 @@ class ADMINZ_OtherTools extends Adminz
 		);
 		return $tabs;
 	}
-	function file_upload_callback() {
+	function adminz_ot_upload_image_callback() {
 		global $wpdb;
 	    $arr_img_ext = array('image/png', 'image/jpeg', 'image/jpg', 'image/gif');
 	    $html = [];
@@ -182,7 +182,7 @@ class ADMINZ_OtherTools extends Adminz
 					        for(i=0; i<file_obj.length; i++) {
 					            form_data.append('file[]', file_obj[i]);
 					        }
-					        form_data.append('action', 'file_upload');
+					        form_data.append('action', 'adminz_ot_upload_image');
 					        $.ajax({
 					            url : '<?php echo admin_url('admin-ajax.php'); ?>',
 					            type: 'POST',

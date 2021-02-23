@@ -11,9 +11,9 @@ class ADMINZ_Fonts extends Adminz {
 		add_action(	'admin_init', [$this,'register_option_setting'] );
 		add_action( 'wp_head', [$this,'enqueue_lato'],101);
 		add_action( 'wp_head', [$this,'enqueue_custom_font'],101);
-		add_action( 'wp_ajax_font_upload', [$this,'font_upload_callback']);	
-		add_action( 'wp_ajax_delete_file', [$this, 'delete_file']);
-		add_action( 'wp_ajax_get_fields', [$this, 'get_fields']);
+		add_action( 'wp_ajax_adminz_f_font_upload', [$this,'font_upload_callback']);	
+		add_action( 'wp_ajax_adminz_f_delete_file', [$this, 'delete_file']);
+		add_action( 'wp_ajax_adminz_f_get_fields', [$this, 'get_fields']);
  	}
  	function delete_file($filepath = false){
  		if(!$filepath){
@@ -159,14 +159,16 @@ class ADMINZ_Fonts extends Adminz {
 			jQuery(function($) {								
 				function fill_data_fields(){
 					var data_fonts = $('textarea[name="adminz_fonts_uploaded"]').val();
-					data_fonts = JSON.parse(data_fonts);
-					for (var i = 0; i < data_fonts.length; i++) {
-						var font_key = data_fonts[i][0];
-						var table_fonts = $('.font-face-attributes[data-font="'+data_fonts[i][0]+'"');
-						table_fonts.find('input[name="font-family"]').val(data_fonts[i][1]);
-						table_fonts.find('input[name="font-weight"]').val(data_fonts[i][2]);
-						table_fonts.find('input[name="font-style"]').val(data_fonts[i][3]);
-						table_fonts.find('input[name="font-stretch"]').val(data_fonts[i][4]);
+					if(data_fonts){
+						data_fonts = JSON.parse(data_fonts);
+						for (var i = 0; i < data_fonts.length; i++) {
+							var font_key = data_fonts[i][0];
+							var table_fonts = $('.font-face-attributes[data-font="'+data_fonts[i][0]+'"');
+							table_fonts.find('input[name="font-family"]').val(data_fonts[i][1]);
+							table_fonts.find('input[name="font-weight"]').val(data_fonts[i][2]);
+							table_fonts.find('input[name="font-style"]').val(data_fonts[i][3]);
+							table_fonts.find('input[name="font-stretch"]').val(data_fonts[i][4]);
+						}
 					}
 				}
 				get_fields();
@@ -177,7 +179,7 @@ class ADMINZ_Fonts extends Adminz {
                         dataType : "json",
                         url : '<?php echo admin_url('admin-ajax.php'); ?>',
                         data : {
-                            action: "get_fields"
+                            action: "adminz_f_get_fields"
                         },
                         context: this,
                         beforeSend: function(){ },
@@ -217,7 +219,7 @@ class ADMINZ_Fonts extends Adminz {
                         dataType : "json",
                         url : '<?php echo admin_url('admin-ajax.php'); ?>',
                         data : {
-                            action: "delete_file",
+                            action: "adminz_f_delete_file",
                             filepath : font_path
                         },
                         context: this,
@@ -245,7 +247,7 @@ class ADMINZ_Fonts extends Adminz {
 			        for(i=0; i<file_obj.length; i++) {
 			            form_data.append('file[]', file_obj[i]);
 			        }
-			        form_data.append('action', 'font_upload');
+			        form_data.append('action', 'adminz_f_font_upload');
 			        $.ajax({
 			            url : '<?php echo admin_url('admin-ajax.php'); ?>',
 			            type: 'POST',

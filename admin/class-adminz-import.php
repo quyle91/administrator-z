@@ -21,14 +21,14 @@ class ADMINZ_Import extends Adminz {
     function __construct() {        
         add_action('admin_init', [$this, 'register_option_setting']);
         add_filter('adminz_setting_tab', [$this, 'register_tab']);        
-        add_action('wp_ajax_check_data', [$this, 'check_data']);
-        add_action('wp_ajax_test_single', [$this, 'test_single']);
-        add_action('wp_ajax_test_category', [$this, 'test_category']);
-        add_action('wp_ajax_test_product', [$this, 'test_product']);
-        add_action('wp_ajax_test_category_product', [$this, 'test_category_product']);
-        add_action('wp_ajax_run_import_single', [$this, 'run_import_single']);
-        add_action('wp_ajax_run_import_single_product', [$this, 'run_import_single_product']);
-        add_action('wp_ajax_run_import_category', [$this, 'run_import_category']);
+        add_action('wp_ajax_adminz_i_check_data', [$this, 'check_data']);
+        add_action('wp_ajax_adminz_i_test_single', [$this, 'test_single']);
+        add_action('wp_ajax_adminz_i_test_category', [$this, 'test_category']);
+        add_action('wp_ajax_adminz_i_test_product', [$this, 'test_product']);
+        add_action('wp_ajax_adminz_i_test_category_product', [$this, 'test_category_product']);
+        add_action('wp_ajax_adminz_i_run_import_single', [$this, 'run_import_single']);
+        add_action('wp_ajax_adminz_i_run_import_single_product', [$this, 'run_import_single_product']);
+        add_action('wp_ajax_adminz_i_run_import_category', [$this, 'run_import_category']);
     }    
     function do_import_single($link = false){
         if(!$link){ $link = $_POST['link']; }
@@ -925,7 +925,7 @@ class ADMINZ_Import extends Adminz {
                             dataType : "json",
                             url : '<?php echo admin_url('admin-ajax.php'); ?>',
                             data : {
-                                action: "check_data",
+                                action: "adminz_i_check_data",
                                 link : link
                             },
                             context: this,
@@ -966,7 +966,7 @@ class ADMINZ_Import extends Adminz {
                             dataType : "json",
                             url : '<?php echo admin_url('admin-ajax.php'); ?>',
                             data : {
-                                action: "test_single",
+                                action: "adminz_i_test_single",
                                 link : link
                             },
                             context: this,
@@ -1039,7 +1039,7 @@ class ADMINZ_Import extends Adminz {
                             dataType : "json",
                             url : '<?php echo admin_url('admin-ajax.php'); ?>',
                             data : {
-                                action: "test_category",
+                                action: "adminz_i_test_category",
                                 link : link
                             },
                             context: this,
@@ -1083,7 +1083,7 @@ class ADMINZ_Import extends Adminz {
                             dataType : "json",
                             url : '<?php echo admin_url('admin-ajax.php'); ?>',
                             data : {
-                                action: "test_product",
+                                action: "adminz_i_test_product",
                                 link : link
                             },
                             context: this,
@@ -1228,7 +1228,7 @@ class ADMINZ_Import extends Adminz {
                             dataType : "json",
                             url : '<?php echo admin_url('admin-ajax.php'); ?>',
                             data : {
-                                action: "test_category_product",
+                                action: "adminz_i_test_category_product",
                                 link : link
                             },
                             context: this,
@@ -1273,7 +1273,7 @@ class ADMINZ_Import extends Adminz {
                             dataType : "json",
                             url : '<?php echo admin_url('admin-ajax.php'); ?>',
                             data : {
-                                action: "run_import_single",
+                                action: "adminz_i_run_import_single",
                                 link : link
                             },
                             context: this,
@@ -1309,7 +1309,7 @@ class ADMINZ_Import extends Adminz {
                             dataType : "json",
                             url : '<?php echo admin_url('admin-ajax.php'); ?>',
                             data : {
-                                action: "test_category",
+                                action: "adminz_i_test_category",
                                 link : link
                             },
                             context: this,
@@ -1356,7 +1356,7 @@ class ADMINZ_Import extends Adminz {
                             dataType : "json",
                             url : '<?php echo admin_url('admin-ajax.php'); ?>',
                             data : {
-                                action: "run_import_single_product",
+                                action: "adminz_i_run_import_single_product",
                                 link : link
                             },
                             context: this,
@@ -1392,7 +1392,7 @@ class ADMINZ_Import extends Adminz {
                             dataType : "json",
                             url : '<?php echo admin_url('admin-ajax.php'); ?>',
                             data : {
-                                action: "test_category_product",
+                                action: "adminz_i_test_category_product",
                                 link : link
                             },
                             context: this,
