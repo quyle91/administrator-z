@@ -11,7 +11,7 @@ class ADMINZ_Fonts extends Adminz {
 		add_action(	'admin_init', [$this,'register_option_setting'] );
 		add_action( 'wp_head', [$this,'enqueue_lato'],101);
 		add_action( 'wp_head', [$this,'enqueue_custom_font'],101);
-		add_action( 'wp_ajax_file_upload', [$this,'file_upload_callback']);	
+		add_action( 'wp_ajax_font_upload', [$this,'font_upload_callback']);	
 		add_action( 'wp_ajax_delete_file', [$this, 'delete_file']);
 		add_action( 'wp_ajax_get_fields', [$this, 'get_fields']);
  	}
@@ -29,7 +29,7 @@ class ADMINZ_Fonts extends Adminz {
  		wp_send_json_success($message);
         wp_die();
  	}
- 	function file_upload_callback() {
+ 	function font_upload_callback() {
  		$html = []; 		
  		for($i = 0; $i < count($_FILES['file']['name']); $i++) {
  			$filter_upload_dir = true;
@@ -92,7 +92,7 @@ class ADMINZ_Fonts extends Adminz {
 		$font_files = glob(wp_upload_dir()['basedir'].$this->font_upload_dir.'/*');
 		if(!empty($font_files) and is_array($font_files)){
 			?>
-			<textarea cols="100" rows="10" name="adminz_fonts_uploaded"><?php echo get_option('adminz_fonts_uploaded',''); ?></textarea>
+			<textarea style="display: none;" cols="100" rows="10" name="adminz_fonts_uploaded"><?php echo get_option('adminz_fonts_uploaded',''); ?></textarea>
 			<div style="padding: 10px; background: white;">            						
 				<table>
 					<tr>
@@ -245,7 +245,7 @@ class ADMINZ_Fonts extends Adminz {
 			        for(i=0; i<file_obj.length; i++) {
 			            form_data.append('file[]', file_obj[i]);
 			        }
-			        form_data.append('action', 'file_upload');
+			        form_data.append('action', 'font_upload');
 			        $.ajax({
 			            url : '<?php echo admin_url('admin-ajax.php'); ?>',
 			            type: 'POST',

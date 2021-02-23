@@ -96,8 +96,7 @@ div[class*="box-shadow"] .box-text-bottom .box-image,
 .button.icon.circle,
 .social-icons.share-icons .button.icon.circle,
 .social-icons.follow-icons .button.icon.circle,
-.back-to-top.circle,
-.button.is-outline{
+.back-to-top.circle{
 	border-color: #ebebeb;
 	background-color: #ebebeb;
 	color: silver;
