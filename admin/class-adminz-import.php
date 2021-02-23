@@ -52,7 +52,7 @@ class ADMINZ_Import extends Adminz {
             foreach ($post_thumbnails as $key => $url) {
                 $res = $this->save_images($url,$post_args['post_title']."-".$key);
                 // set first image for thumbnail
-                if($key ==0){
+                if($key ==0 and $res['attach_id']){
                     set_post_thumbnail( $post_id, $res['attach_id'] );  
                 }
                 $images_imported[$url] = $res['attach_id'];                
@@ -482,6 +482,7 @@ class ADMINZ_Import extends Adminz {
         $image_gallery_tag = get_option('adminz_import_product_thumbnail_tag', "img");
         $image_gallery_data_attr = get_option('adminz_import_product_thumbnail_data_attr', "data-src");
         if($image_class and $image_gallery_tag){
+            $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//".$image_gallery_tag);
             if (!is_null($imgs)){
                 foreach ($imgs as $element){  
                     $return['images_gallery'][] = $this->fix_url($element->getAttribute($image_gallery_data_attr),$link);                    
@@ -683,7 +684,7 @@ class ADMINZ_Import extends Adminz {
         return $return;
     }
     function replace_img_content($link,$images_imported,$content){
-        if(empty($images_imported) or !is_array($images_imported)) return;
+        if(empty($images_imported) or !is_array($images_imported)) return $content;
         $doc = new DOMDocument();
         libxml_use_internal_errors(true);
         $content_encode = mb_convert_encoding($content, 'HTML-ENTITIES', "UTF-8");
