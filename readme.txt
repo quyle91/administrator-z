@@ -1,6 +1,6 @@
 === Administrator Z ===
 Contributors: quyle91
-Tags: auto-update, contact group button, import data, disable xmlrpc.php, replace image keep ID & url
+Tags: auto-update, contact group button, import data, disable xmlrpc.php, replace image, custom font
 Donate link: http://paypal.me/quyle91
 Requires at least: 4.0
 Tested up to: 5.6
