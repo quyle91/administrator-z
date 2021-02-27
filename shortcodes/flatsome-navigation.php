@@ -3,7 +3,7 @@ use Adminz\Admin\Adminz as Adminz;
 function adminz_navigation(){
 	$adminz = new Adminz;
     add_ux_builder_shortcode('adminz_navigation', array(
-        'name'      => __('Navigation'),
+        'name'      => __('Navigation Seletor'),
         'category'  => $adminz->get_adminz_menu_title(),
         'thumbnail' =>  get_template_directory_uri() . '/inc/builder/shortcodes/thumbnails/' . 'nav' . '.svg',
         'options' => array(
