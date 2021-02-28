@@ -18,7 +18,7 @@ class ADMINZ_Import extends Adminz {
     public $options_group = "adminz_import";
     public $title = 'Import';
     public $slug = 'adminz_import';
-    function __construct() {        
+    function __construct() {
         add_action('admin_init', [$this, 'register_option_setting']);
         add_filter('adminz_setting_tab', [$this, 'register_tab']);        
         add_action('wp_ajax_adminz_i_check_data', [$this, 'check_data']);
@@ -236,10 +236,10 @@ class ADMINZ_Import extends Adminz {
 
         $xpath = new DOMXpath($doc);        
 
-        $title_class = get_option('adminz_import_post_title', 'entry-title');
-        $header_class = get_option('adminz_import_post_header_title', 'entry-header');
-        if($title_class and $header_class){
-            $title = $xpath->query("//*[contains(@class, '" . $header_class . "')]//*[contains(@class, '" . $title_class . "')]");
+        $title_dom = get_option('adminz_import_post_title', '.entry-title');
+        $header_dom = get_option('adminz_import_post_header_title', '.entry-header');
+        if($header_dom and $title_dom){
+            $title = $xpath->query($this->get_xpath_query([$header_dom,$title_dom]));
             if (!is_null($title)) {
                 foreach ($title as $element) {
                     $nodes = $element->childNodes;
@@ -247,13 +247,13 @@ class ADMINZ_Import extends Adminz {
                         $return['post_title'] .= $this->fix_content($node->nodeValue, $link);
                     }
                 }
-            }
-        }        
+            } 
+        }              
 
         // get entry image as first array
-        $image_class = get_option('adminz_import_post_thumbnail', 'entry-image');
-        if($image_class){
-            $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//img");
+        $image_dom = get_option('adminz_import_post_thumbnail', '.entry-image');
+        if($image_dom){
+            $imgs = $xpath->query($this->get_xpath_query([$image_dom,"img"]));
             if (!is_null($imgs)) {
                 foreach ($imgs as $element) {
                     if ($element->getAttribute('src')) {
@@ -261,13 +261,14 @@ class ADMINZ_Import extends Adminz {
                         break;
                     }
                 }
-            }
-        }        
+            } 
+        }
+              
 
-        // get all image in entry-content
-        $contentclass = get_option('adminz_import_post_content', 'entry-content');
+        // get all image in .entry-content
+        $contentclass = get_option('adminz_import_post_content', '.entry-content');
         if($contentclass){
-            $imgs = $xpath->query("//*[contains(@class, '" . $contentclass . "')]//img");
+            $imgs = $xpath->query($this->get_xpath_query([$contentclass,"img"]));
             if (!is_null($imgs)) {
                 foreach ($imgs as $element) {
                     if ($element->getAttribute('src')) {                    
@@ -276,12 +277,11 @@ class ADMINZ_Import extends Adminz {
                 }
             }
         }
-
         $return['post_thumbnail'] = array_values(array_unique($return['post_thumbnail']));
 
         //post content
         if($contentclass){
-            $content = $xpath->query("//*[contains(@class, '" . $contentclass . "')]");
+            $content = $xpath->query($this->get_xpath_query([$contentclass]));
             $remove_end = get_option('adminz_import_content_remove_end', 0);
             $remove_first = get_option('adminz_import_content_remove_first', 0);
             if (!is_null($content)) {
@@ -311,9 +311,9 @@ class ADMINZ_Import extends Adminz {
         $xpath = new DOMXpath($doc);
 
 
-        $header_class = get_option('adminz_import_product_header_title', 'product-info');
+        $header_dom = get_option('adminz_import_product_header_title', '.product-info');
         // product type
-        $type = $xpath->query("//*[contains(@class, 'type-product')]/div");
+        $type = $xpath->query($this->get_xpath_query([".type-product","div"]));
         $return['product_type'] = "simple";
         $return['images_gallery'] = [];
         $return['image_thumbnail'] = "";
@@ -339,9 +339,9 @@ class ADMINZ_Import extends Adminz {
         }
         switch ($return['product_type']) {
             case 'external':
-                $single_add_to_cart_button = get_option( 'adminz_import_product_single_add_to_cart_button', 'single_add_to_cart_button' );
-                if($single_add_to_cart_button and $header_class){
-                    $external_url = $xpath->query("//*[contains(@class, '".$header_class."')]//*[contains(@class, '".$single_add_to_cart_button."')]");
+                $single_add_to_cart_button = get_option( 'adminz_import_product_single_add_to_cart_button', '.single_add_to_cart_button' );
+                if($single_add_to_cart_button and $header_dom){
+                    $external_url = $xpath->query($this->get_xpath_query([$header_dom,$single_add_to_cart_button]));
                     if (!is_null($external_url)) {
                         foreach ($external_url as $external) {
                             $return['product_type_data'] = $external->parentNode->getAttribute('action');
@@ -350,9 +350,9 @@ class ADMINZ_Import extends Adminz {
                 }                
                 break;
             case 'variable':
-                $variable_form_class = get_option( 'adminz_import_product_variations_json', 'variations_form' );
-                if($variable_form_class and $header_class){
-                    $variable_form = $xpath->query("//*[contains(@class, '".$header_class."')]//*[contains(@class, '".$variable_form_class."')]");
+                $variable_form_dom = get_option( 'adminz_import_product_variations_json', '.variations_form' );
+                if($variable_form_dom and $header_dom){
+                    $variable_form = $xpath->query($this->get_xpath_query([$header_dom,$variable_form_dom]));
                     if (!is_null($variable_form)) {
                         foreach ($variable_form as $element) {
                             $data_variable = $element->getAttribute('data-product_variations');
@@ -370,15 +370,18 @@ class ADMINZ_Import extends Adminz {
                 // list variations 
                 $return['variations_list'] = [];
                 $return['default_attribute'] = [];
-                $variations_form_class = get_option('adminz_import_product_variations_form_select', 'variations');
-                if($header_class and $variations_form_class){
-                    $variations = $xpath->query("//*[contains(@class, '".$header_class."')]//*[contains(@class, '".$variations_form_class."')]//tr//*[contains(@class, 'label')]//label");
+                $variations_form_dom = get_option('adminz_import_product_variations_form_select', '.variations');
+                if($header_dom and $variations_form_dom){
+                    $variations = $xpath->query($this->get_xpath_query([$header_dom,$variations_form_dom,"tr",".label","label"]));
                     if (!is_null($variations)) {
                         foreach ($variations as $element) {
                             $attr_array =  [];
                             $attr_array['attr_name']= $element->textContent;
-                            $trnode = $element->parentNode->parentNode;
-                            $attrs = $xpath->query("./*[contains(@class, 'value')]//select//option",$trnode);  
+                            $trnode = $element->parentNode->parentNode;      
+                            $attrsquery = $this->get_xpath_query([".value","select","option"]);
+                            $attrsquery = ".".substr($attrsquery, 1);
+                            $attrs = $xpath->query($attrsquery,$trnode);  
+                            //$attrs = $xpath->query("//*[contains(@class, 'value')]//select//option",$trnode);
                             $attr_options = [];      
                             foreach ($attrs as $key => $value) {
                                 if($value->getAttribute('selected') == 'selected'){
@@ -396,9 +399,10 @@ class ADMINZ_Import extends Adminz {
                 break;
             case 'grouped':               
 
-                $grouped_form_class = get_option( 'adminz_import_product_grouped_form', 'grouped_form' );
-                if($grouped_form_class and $header_class){
-                    $grouped_form = $xpath->query("//*[contains(@class, '".$header_class."')]//*[contains(@class, '".$grouped_form_class."')]//tr//a");
+                $grouped_form_dom = get_option( 'adminz_import_product_grouped_form', '.grouped_form' );
+                if($grouped_form_dom and $header_dom){
+                    $grouped_form = $xpath->query($this->get_xpath_query([$header_dom,$grouped_form_dom,"tr","a"]));
+                    //$grouped_form = $xpath->query("//*[contains(@class, '".$header_dom."')]//*[contains(@class, '".$grouped_form_dom."')]//tr//a");
                     if (!is_null($grouped_form)) {
                         foreach ($grouped_form as $element) {
                             if(!$element->getAttribute('aria-label')){
@@ -426,16 +430,11 @@ class ADMINZ_Import extends Adminz {
                 break;
         }        
         
-        $title_class = get_option('adminz_import_product_title', 'product-title');
-        $title_tag = get_option('adminz_import_product_title_tag', '');
+        $title_dom = get_option('adminz_import_product_title', '.product-title');
+        //$title_tag = get_option('adminz_import_product_title_tag', '');
         
-        if($header_class){
-            if($title_tag){
-                $title = $xpath->query("//*[contains(@class, '" . $header_class . "')]//".$title_tag);
-            }else{
-                $title = $xpath->query("//*[contains(@class, '" . $header_class . "')]//*[contains(@class, '" . $title_class . "')]");
-            }
-            
+        if($header_dom){
+            $title = $xpath->query($this->get_xpath_query([$header_dom,$title_dom]));
             if (!is_null($title)){
                 foreach ($title as $element){
                     $nodes = $element->childNodes;
@@ -447,10 +446,11 @@ class ADMINZ_Import extends Adminz {
         }        
 
         // get price product
-        $price_class = get_option('adminz_import_product_price','price-wrapper');
-        $product_prices = get_option('adminz_import_product_prices', 'woocommerce-Price-amount');
-        if($header_class and $price_class and $product_prices){
-            $prices_dom = $xpath->query("//*[contains(@class, '".$header_class."')]//*[contains(@class, '".$price_class."')]//*[contains(@class, '".$product_prices."')]");
+        $price_dom = get_option('adminz_import_product_price','.price-wrapper');
+        $product_prices = get_option('adminz_import_product_prices', '.woocommerce-Price-amount');
+        if($header_dom and $price_dom and $product_prices){
+            $prices_dom = $xpath->query($this->get_xpath_query([$header_dom,$price_dom,$product_prices]));
+            //$prices_dom = $xpath->query("//*[contains(@class, '".$header_dom."')]//*[contains(@class, '".$price_dom."')]//*[contains(@class, '".$product_prices."')]");
             $price_arr = [];
             if (!is_null($prices_dom)) {
                 foreach ($prices_dom as $element) {
@@ -467,9 +467,10 @@ class ADMINZ_Import extends Adminz {
         }        
 
         // images on content
-        $contentclass = get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description');
+        $contentclass = get_option('adminz_import_product_content', '.woocommerce-Tabs-panel--description');
         if($contentclass){
-            $imgs = $xpath->query("//*[contains(@class, '" . $contentclass . "')]//img");
+            $imgs = $xpath->query($this->get_xpath_query([$contentclass,"img"]));
+            //$imgs = $xpath->query("//*[contains(@class, '" . $contentclass . "')]//img");
             if (!is_null($imgs)){
                 foreach ($imgs as $element){                             
                     $return['images_content'][] = $this->fix_url($element->getAttribute('src'),$link);
@@ -478,11 +479,12 @@ class ADMINZ_Import extends Adminz {
         }
 
         // images on gallery
-        $image_class = get_option('adminz_import_product_thumbnail', 'woocommerce-product-gallery__image');
+        $image_dom = get_option('adminz_import_product_thumbnail', '.woocommerce-product-gallery__image');
         $image_gallery_tag = get_option('adminz_import_product_thumbnail_tag', "img");
         $image_gallery_data_attr = get_option('adminz_import_product_thumbnail_data_attr', "data-src");
-        if($image_class and $image_gallery_tag){
-            $imgs = $xpath->query("//*[contains(@class, '" . $image_class . "')]//".$image_gallery_tag);
+        if($image_dom and $image_gallery_tag){
+            $imgs = $xpath->query($this->get_xpath_query([$image_dom,$image_gallery_tag]));
+            //$imgs = $xpath->query("//*[contains(@class, '" . $image_dom . "')]//".$image_gallery_tag);
             if (!is_null($imgs)){
                 foreach ($imgs as $element){  
                     $return['images_gallery'][] = $this->fix_url($element->getAttribute($image_gallery_data_attr),$link);                    
@@ -508,9 +510,10 @@ class ADMINZ_Import extends Adminz {
         }
 
         // get product short_description        
-        $excerpt_class = get_option('adminz_import_product_short_description', 'product-short-description');
-        if($excerpt_class and $header_class){
-            $excerpt = $xpath->query("//*[contains(@class, '".$header_class."')]//*[contains(@class, '".$excerpt_class."')]");
+        $excerpt_dom = get_option('adminz_import_product_short_description', '.product-short-description');
+        if($excerpt_dom and $header_dom){
+            $excerpt = $xpath->query($this->get_xpath_query([$header_dom,$excerpt_dom]));
+            //$excerpt = $xpath->query("//*[contains(@class, '".$header_dom."')]//*[contains(@class, '".$excerpt_dom."')]");
             if (!is_null($excerpt)) {
 
                 foreach ($excerpt as $element) {                
@@ -523,9 +526,10 @@ class ADMINZ_Import extends Adminz {
         }        
 
         // get product content 
-        $contentclass = get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description');
+        $contentclass = get_option('adminz_import_product_content', '.woocommerce-Tabs-panel--description');
         if($contentclass){
-            $content = $xpath->query("//*[contains(@class, '" . $contentclass . "')]");
+            $content = $xpath->query($this->get_xpath_query([$contentclass]));
+            //$content = $xpath->query("//*[contains(@class, '" . $contentclass . "')]");
             $remove_end = get_option('adminz_import_content_remove_end', 0);
             $remove_first = get_option('adminz_import_content_remove_first', 0);
             if (!is_null($content)){
@@ -552,12 +556,11 @@ class ADMINZ_Import extends Adminz {
         libxml_clear_errors();
 
         $xpath = new DOMXpath($doc);
-        $blog_wrapper_class = get_option('adminz_import_category_wrapper', 'blog-wrapper');
-        $post_item_class = get_option('adminz_import_category_post_item', 'post-item');        
+        $blog_wrapper_dom = get_option('adminz_import_category_wrapper', '.blog-wrapper');
+        $post_item_dom = get_option('adminz_import_category_post_item', '.post-item');        
 
-        if($blog_wrapper_class and $post_item_class){
-
-            $titles = $xpath->query("//*[contains(@class, '" . $blog_wrapper_class . "')]//*[contains(@class, '" . $post_item_class . "')]");
+        if($blog_wrapper_dom and $post_item_dom){
+            $titles = $xpath->query($this->get_xpath_query([$blog_wrapper_dom,$post_item_dom]));
             if (!is_null($titles)) {
                 foreach ($titles as $key => $n) {
                    $return[$key]['post_title'] = $n->textContent;
@@ -582,17 +585,19 @@ class ADMINZ_Import extends Adminz {
         libxml_clear_errors();
         $xpath = new DOMXpath($doc);
 
-        $products_wrapper = get_option('adminz_import_category_product_wrapper', 'products');
-        $product_item_wrapper = get_option('adminz_import_category_product_item', 'product-small col');
-        $product_item_wrapper_tag = get_option('adminz_import_category_product_item_tag', '');        
+        $products_wrapper = get_option('adminz_import_category_product_wrapper', '.products');
+        $product_item_wrapper = get_option('adminz_import_category_product_item', '.product-small');
+        //$product_item_wrapper_tag = get_option('adminz_import_category_product_item_tag', '');        
 
         if($products_wrapper){
-            $query = "//*[contains(@class, '" . $products_wrapper . "')]";
+            /*$query = "//*[contains(@class, '" . $products_wrapper . "')]";
             if($product_item_wrapper_tag){
                 $query .= "//".$product_item_wrapper_tag;
             }elseif($product_item_wrapper){
                 $query .= "//*[contains(@class, '" . $product_item_wrapper . "')]";
-            }
+            }*/
+
+            $query = $this->get_xpath_query([$products_wrapper,$product_item_wrapper]);
             $titles = $xpath->query($query);
             if (!is_null($titles)) {
                 foreach ($titles as $key => $n) {
@@ -721,11 +726,35 @@ class ADMINZ_Import extends Adminz {
     }
     function save_images($image_url, $posttitle) {
         $file = $this->get_remote($image_url,false);
-        $postname = sanitize_title($posttitle);
-        $im_name = "$postname.jpg";
-        $res = wp_upload_bits($im_name, '', $file);
-        //$attach_id = $this->insert_attachment($res['file']);
 
+        $rewrite_name = get_option( 'adminz_import_content_rewrite_image_name', '' );
+        $use_exits_image = get_option( 'adminz_import_content_use_exits_image','on');        
+
+        $im_name = basename($image_url);
+        if($rewrite_name == "on"){
+            $postname = sanitize_title($posttitle);
+            $im_name = "$postname.jpg";            
+        } 
+
+        if($use_exits_image == "on"){
+            $res = [];
+            $searchname = sanitize_title(str_replace([".jpg",".jpeg",".png",".gif"], "", $im_name));
+            $args = array(          
+                'name' => $searchname,
+                'post_type'=> 'attachment',
+            );    
+            
+            $olds = new WP_Query( $args );
+            if ( $olds->have_posts() ) :
+                while ( $olds->have_posts() ) : $olds->the_post();
+                    $res['attach_id'] = get_the_ID();
+                endwhile;                
+            endif;
+            wp_reset_postdata();
+            if($res['attach_id']) return $res;
+        }
+
+        $res = wp_upload_bits($im_name, '', $file);
         $dirs = wp_upload_dir();
         $filetype = wp_check_filetype($res['file']);
         $attachment = array(
@@ -738,9 +767,7 @@ class ADMINZ_Import extends Adminz {
         $attach_id = wp_insert_attachment($attachment, $res['file']);
         $attach_data = wp_generate_attachment_metadata($attach_id, $res['file']);
         wp_update_attachment_metadata($attach_id, $attach_data);
-
-
-        $res['attach_id'] = $attach_id;        
+        $res['attach_id'] = $attach_id;
         return $res;
     }
     function fix_product_price($price){
@@ -798,18 +825,30 @@ class ADMINZ_Import extends Adminz {
             "$1=$2".$domain."$3",
         ];
 
-        // remove all link
-        if (get_option('adminz_import_content_remove_link', "on") == "on"){
-            $preg_arr_from[] = '#<a.*?>(.*?)</a>#i';
-            $preg_arr_to[] = '\1';
+        if (get_option('adminz_import_content_remove_attrs', 'a')){
+            $remove_attributes = get_option('adminz_import_content_remove_attrs', 'a');
+            $remove_attributes = explode(',',$remove_attributes);
+            
+            if(!empty($remove_attributes) and is_array($remove_attributes)){
+                foreach ($remove_attributes as $attr) {
+                    $preg_arr_from[] = '#<'.$attr.'.*?>(.*?)</'.$attr.'>#i';
+                    $preg_arr_to[] = '\1';
+                }
+            }
+        }
+
+        if (get_option('adminz_import_content_remove_tags', 'iframe,script,video,audio')){
+            $remove_tags = get_option('adminz_import_content_remove_tags', 'iframe,script,video,audio');
+            $remove_tags = explode(',',$remove_tags);
+            
+            if(!empty($remove_tags) and is_array($remove_tags)){
+                foreach ($remove_tags as $tag) {
+                    $preg_arr_from[] = '#<'.$tag.'(.*?)>(.*?)</'.$tag.'>#is';
+                    $preg_arr_to[] = '';
+                }
+            }
         }
         
-        // remove all script tag
-        if (get_option('adminz_import_content_remove_script', "on") == "on"){            
-            $preg_arr_from[] = '#<script(.*?)>(.*?)</script>#is';
-            $preg_arr_to[] = '';
-        }        
-
         $content = preg_replace(
             $preg_arr_from, 
             $preg_arr_to,
@@ -829,6 +868,23 @@ class ADMINZ_Import extends Adminz {
          
 
         return $content;
+    }
+    function get_xpath_query($selectors = false){
+        if(!is_array($selectors) or empty($selectors)) return ; 
+        $return = "";
+        
+        foreach ($selectors as $selector) {
+            if($selector){
+                if($selector[0] == "#"){
+                    $return .= "//*[contains(@id, '" . substr($selector, 1) . "')]";
+                }elseif($selector[0] == "."){
+                    $return .= "//*[contains(@class, '" . substr($selector, 1) . "')]";
+                }else{
+                    $return .= "//".$selector;
+                }
+            }
+        }
+        return $return ;
     }
     function tool_script() {
         ob_start();?>
@@ -1516,8 +1572,12 @@ class ADMINZ_Import extends Adminz {
         <?php echo $this->tool_script(); ?>
             <table class="form-table">
                 <tr valign="top">
-                    <th><h3>CSS classses check</h3></th>
-                    <td></td>
+                    <th>
+                        <h3>HTML Dom checker</h3>
+                    </th>
+                    <td>
+
+                    </td>
                 </tr>
                 <tr valign="top">                   
                     <th>
@@ -1525,20 +1585,20 @@ class ADMINZ_Import extends Adminz {
                     </th>
                     <td>
                         <p>
-                            <input type="text" name="adminz_import_post_header_title" placeholder='entry-header' value="<?php echo get_option('adminz_import_post_header_title', 'entry-header'); ?>" />
-                            <code>Header wrapper class</code>
+                            <input type="text" name="adminz_import_post_header_title" placeholder='.entry-header' value="<?php echo get_option('adminz_import_post_header_title', '.entry-header'); ?>" />
+                            <code>Header wrapper</code>
                         </p>
                         <p>
-                            &rdsh;<input type="text" name="adminz_import_post_title" placeholder='entry-title' value="<?php echo get_option('adminz_import_post_title', 'entry-title'); ?>" />
-                            <code>Title wrapper class</code>
+                            &rdsh;<input type="text" name="adminz_import_post_title" placeholder='.entry-title' value="<?php echo get_option('adminz_import_post_title', '.entry-title'); ?>" />
+                            <code>Title wrapper</code>
                         </p>
                         <p>
-                            <input type="text" name="adminz_import_post_thumbnail" placeholder='entry-image' value="<?php echo get_option('adminz_import_post_thumbnail', 'entry-image'); ?>" />
-                            <code>Thumbnails wrapper class</code>
+                            <input type="text" name="adminz_import_post_thumbnail" placeholder='.entry-image' value="<?php echo get_option('adminz_import_post_thumbnail', '.entry-image'); ?>" />
+                            <code>Thumbnails wrapper</code>
                         </p>
                         <p>
-                            <input type="text" name="adminz_import_post_content" placeholder='entry-content' value="<?php echo get_option('adminz_import_post_content', 'entry-content'); ?>" />
-                            <code>Content wrapper class</code>
+                            <input type="text" name="adminz_import_post_content" placeholder='.entry-content' value="<?php echo get_option('adminz_import_post_content', '.entry-content'); ?>" />
+                            <code>Content wrapper</code>
                         </p>
                     </td>
                 </tr>
@@ -1548,12 +1608,12 @@ class ADMINZ_Import extends Adminz {
                     </th>
                     <td>
                         <p>                         
-                            <input type="text" name="adminz_import_category_wrapper" placeholder = 'blog-wrapper' value="<?php echo get_option('adminz_import_category_wrapper', 'blog-wrapper'); ?>" />
-                            <code>Category wrapper class</code> <em>| distinguish it from widget/ sidebar wrapper</em>
+                            <input type="text" name="adminz_import_category_wrapper" placeholder = '.blog-wrapper' value="<?php echo get_option('adminz_import_category_wrapper', '.blog-wrapper'); ?>" />
+                            <code>Category wrapper</code> <em>| distinguish it from widget/ sidebar wrapper</em>
                         </p>
                         <p>
-                            &rdsh;<input type="text" name="adminz_import_category_post_item" placeholder='post-item' value="<?php echo get_option('adminz_import_category_post_item', 'post-item'); ?>" />
-                            <code>Post item wrapper class</code>
+                            &rdsh;<input type="text" name="adminz_import_category_post_item" placeholder='.post-item' value="<?php echo get_option('adminz_import_category_post_item', '.post-item'); ?>" />
+                            <code>Post item wrapper</code>
                         </p>                 
                     </td>
                 </tr>
@@ -1564,45 +1624,44 @@ class ADMINZ_Import extends Adminz {
                     </th>
                     <td>
                         <p>
-                            <input type="text" name="adminz_import_product_header_title" placeholder='product-info' value="<?php echo get_option('adminz_import_product_header_title', 'product-info'); ?>" />
-                            <code>Header information wrapper class</code>
+                            <input type="text" name="adminz_import_product_header_title" placeholder='.product-info' value="<?php echo get_option('adminz_import_product_header_title', '.product-info'); ?>" />
+                            <code>Header information wrapper</code>
                         </p>
                         <p>
-                            &rdsh;<input type="text" name="adminz_import_product_title" placeholder='product-title' value="<?php echo get_option('adminz_import_product_title', 'product-title'); ?>" />
-                            &rdsh;&rdsh;<input type="text" name="adminz_import_product_title_tag" placeholder='Use html tag instead' value="<?php echo get_option('adminz_import_product_title_tag', ''); ?>" /> 
-                            <code>Title wrapper class</code>
+                            &rdsh;<input type="text" name="adminz_import_product_title" placeholder='.product-title' value="<?php echo get_option('adminz_import_product_title', '.product-title'); ?>" />
+                            <code>Title wrapper</code>
                         </p>
                         <p>
-                            &rdsh;<input type="text" name="adminz_import_product_price" placeholder='price-wrapper' value="<?php echo get_option('adminz_import_product_price', 'price-wrapper'); ?>" />
-                            <code>Price wrapper class</code>
+                            &rdsh;<input type="text" name="adminz_import_product_price" placeholder='.price-wrapper' value="<?php echo get_option('adminz_import_product_price', '.price-wrapper'); ?>" />
+                            <code>Price wrapper</code>
                         </p>
                         <p>
-                            &rdsh;&rdsh;<input type="text" name="adminz_import_product_prices" placeholder='woocommerce-Price-amount' value="<?php echo get_option('adminz_import_product_prices', 'woocommerce-Price-amount'); ?>" />
-                            <code>Prices class</code>
+                            &rdsh;&rdsh;<input type="text" name="adminz_import_product_prices" placeholder='.woocommerce-Price-amount' value="<?php echo get_option('adminz_import_product_prices', '.woocommerce-Price-amount'); ?>" />
+                            <code>Prices</code>
                         </p>
                         <p>
-                            &rdsh;<input type="text" name="adminz_import_product_single_add_to_cart_button" placeholder='single_add_to_cart_button' value="<?php echo get_option('adminz_import_product_single_add_to_cart_button', 'single_add_to_cart_button'); ?>" />
+                            &rdsh;<input type="text" name="adminz_import_product_single_add_to_cart_button" placeholder='.single_add_to_cart_button' value="<?php echo get_option('adminz_import_product_single_add_to_cart_button', '.single_add_to_cart_button'); ?>" />
                             <code>Single add to cart button</code>
                         </p>
                         <p>
-                            &rdsh;<input type="text" name="adminz_import_product_variations_json" placeholder='variations_form' value="<?php echo get_option('adminz_import_product_variations_json', 'variations_form'); ?>" />
+                            &rdsh;<input type="text" name="adminz_import_product_variations_json" placeholder='.variations_form' value="<?php echo get_option('adminz_import_product_variations_json', '.variations_form'); ?>" />
                             <code>Variations json data</code>
                         </p>
                         <p>
-                            &rdsh;<input type="text" name="adminz_import_product_variations_form_select" placeholder='variations' value="<?php echo get_option('adminz_import_product_variations_form_select', 'variations'); ?>" />
+                            &rdsh;<input type="text" name="adminz_import_product_variations_form_select" placeholder='.variations' value="<?php echo get_option('adminz_import_product_variations_form_select', '.variations'); ?>" />
                             <code>Variations form select</code>
                         </p>
                         <p>
-                            &rdsh;<input type="text" name="adminz_import_product_grouped_form" placeholder='grouped_form' value="<?php echo get_option('adminz_import_product_grouped_form', 'grouped_form'); ?>" />
+                            &rdsh;<input type="text" name="adminz_import_product_grouped_form" placeholder='.grouped_form' value="<?php echo get_option('adminz_import_product_grouped_form', '.grouped_form'); ?>" />
                             <code>Grouped form</code>
                         </p>
                         <p>
-                            &rdsh;<input type="text" name="adminz_import_product_short_description" placeholder='product-short-description' value="<?php echo get_option('adminz_import_product_short_description', 'product-short-description'); ?>" />
-                            <code>Excerpt wrapper class</code>
+                            &rdsh;<input type="text" name="adminz_import_product_short_description" placeholder='.product-short-description' value="<?php echo get_option('adminz_import_product_short_description', '.product-short-description'); ?>" />
+                            <code>Excerpt wrapper</code>
                         </p>
                         <p>
-                            <input type="text" name="adminz_import_product_thumbnail" placeholder='woocommerce-product-gallery__image' value="<?php echo get_option('adminz_import_product_thumbnail', 'woocommerce-product-gallery__image'); ?>" />
-                            <code>Gallery wrapper class</code>
+                            <input type="text" name="adminz_import_product_thumbnail" placeholder='.woocommerce-product-gallery__image' value="<?php echo get_option('adminz_import_product_thumbnail', '.woocommerce-product-gallery__image'); ?>" />
+                            <code>Gallery wrapper</code>
                         </p>
                         <p>
                             &rdsh;<input type="text" name="adminz_import_product_thumbnail_tag" placeholder='img' value="<?php echo get_option('adminz_import_product_thumbnail_tag', 'img'); ?>" />
@@ -1613,8 +1672,8 @@ class ADMINZ_Import extends Adminz {
                             <code>Gallery item data attribute</code>
                         </p>                        
                         <p>
-                            <input type="text" name="adminz_import_product_content" placeholder='woocommerce-Tabs-panel--description' value="<?php echo get_option('adminz_import_product_content', 'woocommerce-Tabs-panel--description'); ?>" />
-                            <code>Content wrapper class | Warning: Select <b>Inside</b> a description tab content for reason: default hide tab css</code>
+                            <input type="text" name="adminz_import_product_content" placeholder='.woocommerce-Tabs-panel--description' value="<?php echo get_option('adminz_import_product_content', '.woocommerce-Tabs-panel--description'); ?>" />
+                            <code>Content wrapper </code>| Warning: Select <b>Inside</b> a description tab content for reason: default hide tab css
                         </p>                        
                     </td>
                 </tr>
@@ -1624,13 +1683,12 @@ class ADMINZ_Import extends Adminz {
                     </th>
                     <td>
                         <p>                         
-                            <input type="text" name="adminz_import_category_product_wrapper" placeholder = 'products' value="<?php echo get_option('adminz_import_category_product_wrapper', 'products'); ?>" />
-                            <code>List wrapper class</code> <em>| distinguish it from widget/ sidebar wrapper</em>
+                            <input type="text" name="adminz_import_category_product_wrapper" placeholder = '.products' value="<?php echo get_option('adminz_import_category_product_wrapper', '.products'); ?>" />
+                            <code>List wrapper</code> <em>| distinguish it from widget/ sidebar wrapper</em>
                         </p>
                         <p>
-                            &rdsh;<input type="text" name="adminz_import_category_product_item" placeholder='product-small col' value="<?php echo get_option('adminz_import_category_product_item', 'product-small col'); ?>" />
-                            &rdsh;&rdsh;<input type="text" name="adminz_import_category_product_item_tag" placeholder='Use html tag instead' value="<?php echo get_option('adminz_import_category_product_item_tag', ''); ?>" />
-                            <code>Item wrapper class</code>
+                            &rdsh;<input type="text" name="adminz_import_category_product_item" placeholder='.product-small' value="<?php echo get_option('adminz_import_category_product_item', '.product-small'); ?>" />                            
+                            <code>Item wrapper</code>
                         </p>             
                     </td>
                 </tr>
@@ -1638,34 +1696,58 @@ class ADMINZ_Import extends Adminz {
                 <tr valign="top">
                     <th><h3>Content fix</h3></th>
                     <td></td>
-                </tr>                
+                </tr> 
+                <tr valign="top">                   
+                    <th>
+                        Attachment
+                    </th>
+                    <td>
+                        <label>
+                            <input type="checkbox" disabled checked  name=""/>
+                            <code>Save images to library</code>
+                        </label>
+                        <br>                        
+                        <label>
+                            <input type="checkbox" <?php echo get_option('adminz_import_content_use_exits_image','on') == 'on' ? 'checked' : ''; ?>  name="adminz_import_content_use_exits_image"/>
+                            <code>Use exits images in library to post content</code> <em>Search image name before upload to library</em>
+                        </label>
+                        <br>
+                        <label>
+                            <input type="checkbox" <?php echo get_option('adminz_import_content_rewrite_image_name','') == 'on' ? 'checked' : ''; ?>  name="adminz_import_content_rewrite_image_name"/>
+                            <code>Rewrite image name </code> <em> <b>Name structure</b>: [post-title]-[image-index]</em>
+                        </label>
+                        <br>
+                    </td>
+                </tr> 
+                <tr valign="top">                   
+                    <th>
+                        Small thumbnail url fix
+                    </th>
+                    <td>
+                        <p>                         
+                            <textarea rows="3" cols="40%" class="input-text wide-input " placeholder="-280x280&#10;-400x400" type="text" name="adminz_import_thumbnail_url_remove_string" ><?php echo get_option('adminz_import_thumbnail_url_remove_string', "-280x280&#10;-400x400&#10;-800x800"); ?></textarea><br>
+                        </p>                        
+                        <span>https://domain.com/image_folder/image_name<code>-280x280</code>.jpg</span><br>
+                        <span>https://domain.com/image_folder/image_name<code>-400x400</code>.jpg</span><br>
+                    </td>
+                </tr>              
                 <tr valign="top">                   
                     <th>
                         Content Fix
                     </th>
                     <td>
+                        <p>
                         <label>
-                            <input type="checkbox" disabled checked  name=""/>
-                            Save images to library
+                            <input type="text" value="<?php echo get_option('adminz_import_content_remove_attrs','a');?>" placeholder = "a" name="adminz_import_content_remove_attrs"/>
+                            <code>Remove Attributes for Tags</code> | Tags are separated by commas
                         </label>
-                        <br>
+                        </p>
+                        <p>
                         <label>
-                            <input type="checkbox" <?php echo get_option('adminz_import_content_remove_link','on') == 'on' ? 'checked' : ''; ?>  name="adminz_import_content_remove_link"/>
-                            Remove all link
+                            <input type="text" value="<?php echo get_option('adminz_import_content_remove_tags','iframe,script,video,audio');?>" placeholder = "iframe,script,video,audio" name="adminz_import_content_remove_tags"/>
+                            <code>Remove HTML Tags</code> | Tags are separated by commas
                         </label>
-                        <br>
-                        <label>
-                            <input type="checkbox" <?php echo get_option('adminz_import_content_remove_script','on') == 'on' ? 'checked' : ''; ?>  name="adminz_import_content_remove_script"/>
-                            Remove all script tag
-                        </label>
-                        <br>
-                    </td>
-                </tr>
-                <tr valign="top">                   
-                    <th>
-                        Remove line
-                    </th>
-                    <td>
+                        </p>
                         <p>                         
                             <input type="number" name="adminz_import_content_remove_first" placeholder = '0' value="<?php echo get_option('adminz_import_content_remove_first', 0); ?>" />
                             <code>Removes the number of elements from the <strong>First</strong></code> <em>Useful when removing post meta: date, author, viewcount </em>
@@ -1675,21 +1757,22 @@ class ADMINZ_Import extends Adminz {
                             <code>Removes the number of elements from the <strong>END</strong></code> <em>Useful when removing signatures or socials share buttons</em>
                         </p>
                     </td>
-                </tr>                
-                <tr valign="top">                   
+                </tr>
+                <tr valign="top">
                     <th>
-                        Content replace string
+                        Search and replace content
                     </th>
                     <td>
+                        
                         <p>                         
-                            <textarea rows="7" cols="100%" class="input-text wide-input " type="text" name="adminz_import_content_replace_from" placeholder="Administrator Z&#10;Foo&#10;Bar" ><?php echo get_option('adminz_import_content_replace_from', "Administrator Z\nFoo\nBar"); ?></textarea><br>
+                            <textarea rows="3" cols="40%" class="input-text wide-input " type="text" name="adminz_import_content_replace_from" placeholder="Administrator Z&#10;Foo&#10;Bar" ><?php echo get_option('adminz_import_content_replace_from', "Administrator Z\nFoo\nBar"); ?></textarea><br>
                         </p>
                         <p>             
-                            <textarea rows="7" cols="100%" class="input-text wide-input " type="text" name="adminz_import_content_replace_to" placeholder="Your strings&#10;Foo 2&#10;Bar 2"><?php echo get_option('adminz_import_content_replace_to', "Your strings\nFoo 2\nBar 2"); ?></textarea><br>
+                            <textarea rows="3" cols="40%" class="input-text wide-input " type="text" name="adminz_import_content_replace_to" placeholder="Your strings&#10;Foo 2&#10;Bar 2"><?php echo get_option('adminz_import_content_replace_to', "Your strings\nFoo 2\nBar 2"); ?></textarea><br>
                         </p>
                         <code>Each character is one line</code>
                     </td>
-                </tr>                
+                </tr>         
                 <?php if(class_exists( 'WooCommerce' ) ){ ?>
                 <tr valign="top">                   
                     <th>
@@ -1717,19 +1800,7 @@ class ADMINZ_Import extends Adminz {
                             </label>
                         </p>
                     </td>
-                </tr>
-                <tr valign="top">                   
-                    <th>
-                        Small thumbnail url fix
-                    </th>
-                    <td>
-                        <p>                         
-                            <textarea rows="3" cols="40%" class="input-text wide-input " placeholder="-280x280&#10;-400x400" type="text" name="adminz_import_thumbnail_url_remove_string" ><?php echo get_option('adminz_import_thumbnail_url_remove_string', "-280x280&#10;-400x400&#10;-800x800"); ?></textarea><br>
-                        </p>                        
-                        <span>https://domain.com/image_folder/image_name<code>-280x280</code>.jpg</span><br>
-                        <span>https://domain.com/image_folder/image_name<code>-400x400</code>.jpg</span><br>
-                    </td>
-                </tr>
+                </tr>                
                 <tr valign="top">                   
                     <th>
                         Price
@@ -1762,7 +1833,7 @@ class ADMINZ_Import extends Adminz {
         register_setting($this->options_group, 'adminz_import_from_category');        
         register_setting($this->options_group, 'adminz_import_from_product');        
         register_setting($this->options_group, 'adminz_import_from_product_category');        
-        //single post
+        // single post
         register_setting($this->options_group, 'adminz_import_post_header_title');
         register_setting($this->options_group, 'adminz_import_post_title');
         register_setting($this->options_group, 'adminz_import_post_thumbnail');
@@ -1773,14 +1844,12 @@ class ADMINZ_Import extends Adminz {
         
         // single product
         register_setting($this->options_group, 'adminz_import_product_header_title');
-        register_setting($this->options_group, 'adminz_import_product_title');
-        register_setting($this->options_group, 'adminz_import_product_title_tag');
+        register_setting($this->options_group, 'adminz_import_product_title');        
         register_setting($this->options_group, 'adminz_import_product_price');
         register_setting($this->options_group, 'adminz_import_product_prices');
         register_setting($this->options_group, 'adminz_import_product_thumbnail');
         register_setting($this->options_group, 'adminz_import_product_thumbnail_tag');
-        register_setting($this->options_group, 'adminz_import_product_thumbnail_data_attr');        
-        //register_setting($this->options_group, 'adminz_import_product_gallery');
+        register_setting($this->options_group, 'adminz_import_product_thumbnail_data_attr');                
         register_setting($this->options_group, 'adminz_import_product_short_description');
         register_setting($this->options_group, 'adminz_import_product_content');
         register_setting($this->options_group, 'adminz_import_product_single_add_to_cart_button');
@@ -1790,20 +1859,18 @@ class ADMINZ_Import extends Adminz {
         // category product
         register_setting($this->options_group, 'adminz_import_category_product_wrapper');
         register_setting($this->options_group, 'adminz_import_category_product_item');
-        register_setting($this->options_group, 'adminz_import_category_product_item_tag');
-        
         // content fix
-        //register_setting($this->options_group, 'adminz_import_content_auto_save_image');
-        
         register_setting($this->options_group, 'adminz_import_thumbnail_url_remove_string');
-        register_setting($this->options_group, 'adminz_import_content_remove_link');
-        register_setting($this->options_group, 'adminz_import_content_remove_script');
+        register_setting($this->options_group, 'adminz_import_content_remove_attrs');  
+        register_setting($this->options_group, 'adminz_import_content_rewrite_image_name');
+        register_setting($this->options_group, 'adminz_import_content_use_exits_image');        
+        register_setting($this->options_group, 'adminz_import_content_remove_tags');
         register_setting($this->options_group, 'adminz_import_content_remove_first');
         register_setting($this->options_group, 'adminz_import_content_remove_end');
         register_setting($this->options_group, 'adminz_import_content_replace_from');
         register_setting($this->options_group, 'adminz_import_content_replace_to');        
         register_setting($this->options_group, 'adminz_import_product_include_image_content_to_gallery');
-        register_setting($this->options_group, 'adminz_import_product_include_image_variations_to_gallery');        
+        register_setting($this->options_group, 'adminz_import_product_include_image_variations_to_gallery');
         register_setting($this->options_group, 'adminz_import_content_product_decimal_seprator');
     }
 }
