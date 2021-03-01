@@ -47,22 +47,26 @@ class ADMINZ_Import extends Adminz {
         }
         // query all image and save
         $post_thumbnails = $data['post_thumbnail'];
-        $images_imported = [];
+        $images_imported = [];        
         if(!empty($post_thumbnails) and is_array($post_thumbnails)){
             foreach ($post_thumbnails as $key => $url) {
-                $res = $this->save_images($url,$post_args['post_title']."-".$key);
-                // set first image for thumbnail
-                if($key ==0 and $res['attach_id']){
-                    set_post_thumbnail( $post_id, $res['attach_id'] );  
-                }
-                $images_imported[$url] = $res['attach_id'];                
+                $res = $this->save_images($url,$post_args['post_title']."-".$key);                
+                $images_imported[$url] = $res['attach_id'];
             }
-        }           
+        }        
+        if(!empty($images_imported) and is_array($images_imported)){  
+            foreach ($images_imported as $url => $id) {
+                if($id){
+                    set_post_thumbnail( $post_id, $id );
+                    break;
+                }                
+            }
+        }
         $data['post_content'] = $this->replace_img_content($link,$images_imported,$data['post_content']);
         $content_replaced = array(
             'ID'           => $post_id,
             'post_content' => $this->fix_content($data['post_content'])
-        );        
+        );
         wp_update_post( $content_replaced );
         return $post_id;
     }
@@ -76,8 +80,9 @@ class ADMINZ_Import extends Adminz {
         if(!empty($image_all) and is_array($image_all)){
             foreach ($image_all as $key => $url) {
                 $res = $this->save_images($url,$data['post_title']."-".$key);
+                $images_imported[$url] = $res['attach_id'];
+                
                 if($res['attach_id']){
-                    $images_imported[$url] = $res['attach_id'];
                     if(in_array($url, $data['images_gallery'])){
                         $gallery[] = $res['attach_id'];
                     }                    
@@ -278,7 +283,6 @@ class ADMINZ_Import extends Adminz {
             }
         }
         $return['post_thumbnail'] = array_values(array_unique($return['post_thumbnail']));
-
         //post content
         if($contentclass){
             $content = $xpath->query($this->get_xpath_query([$contentclass]));
@@ -667,13 +671,17 @@ class ADMINZ_Import extends Adminz {
         wp_die();
     }  
     function get_remote($link,$format=true){
-        $request  = wp_remote_get( $link );        
-        $html = wp_remote_retrieve_body( $request );
-        if (!('OK' !== wp_remote_retrieve_response_message( $html ) OR 200 !== wp_remote_retrieve_response_code( $html ) )){
+        $request  = wp_remote_get( $link );               
+        if ('OK' !== wp_remote_retrieve_response_message( $request )
+                OR 200 !== wp_remote_retrieve_response_code( $request ) ) {
                 return false;
-            }
-        if($format){ $html = mb_convert_encoding($html, 'HTML-ENTITIES', "UTF-8"); }        
-        return $html;
+        }else{
+            $html = wp_remote_retrieve_body( $request ); 
+            if($format){ 
+                $html = mb_convert_encoding($html, 'HTML-ENTITIES', "UTF-8"); 
+            }        
+            return $html;
+        }
     }
     function search_product($title){
 
@@ -725,8 +733,12 @@ class ADMINZ_Import extends Adminz {
         return $content;
     }
     function save_images($image_url, $posttitle) {
+        $res = [];
         $file = $this->get_remote($image_url,false);
-
+        if(!$file) {
+            $res['attach_id'] = false;
+            return $res;
+        }
         $rewrite_name = get_option( 'adminz_import_content_rewrite_image_name', '' );
         $use_exits_image = get_option( 'adminz_import_content_use_exits_image','on');        
 
@@ -734,10 +746,9 @@ class ADMINZ_Import extends Adminz {
         if($rewrite_name == "on"){
             $postname = sanitize_title($posttitle);
             $im_name = "$postname.jpg";            
-        } 
+        }
 
-        if($use_exits_image == "on"){
-            $res = [];
+        if($use_exits_image == "on"){            
             $searchname = sanitize_title(str_replace([".jpg",".jpeg",".png",".gif"], "", $im_name));
             $args = array(          
                 'name' => $searchname,
