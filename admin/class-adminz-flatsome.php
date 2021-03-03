@@ -37,7 +37,7 @@ class ADMINZ_Flatsome extends Adminz {
 				position: absolute;
 				left:0;
 				bottom: 0;
-			}
+			}			
 			/*fix*/
 			.mfp-close{
 			    mix-blend-mode: unset;
