@@ -22,7 +22,7 @@ function adminz_flickity(){
 	        	'type'=>'textfield',
 	        	'heading'=> 'freeScroll'
 	        ),
-	        'wrapAround'=> array(
+ 			'wrapAround'=> array(
 	        	'type'=>'textfield',
 	        	'heading'=> 'wrapAround'
 	        ),
@@ -58,6 +58,10 @@ function adminz_flickity(){
 				'type'=>'textfield',
 				'heading'=> 'friction'
 			),
+			'imagesLoaded'=> array(
+	        	'type'=>'textfield',
+	        	'heading'=> 'imagesLoaded'
+	        ),
 			'lazyLoad'=> array(
 				'type'=>'textfield',
 				'heading'=> 'lazyLoad'
@@ -110,20 +114,23 @@ function adminz_flickity(){
     ));
 }
 function adminz_flickity_function($atts){
-	wp_enqueue_script( 'adminz_flickity_js', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/flickity.pkgd.min.js', array('jquery') );
-	wp_enqueue_style( 'adminz_flickity_css', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/flickity.min.css');
+	if(!in_array('Flatsome', [wp_get_theme()->name, wp_get_theme()->parent_theme])){
+		wp_enqueue_script( 'adminz_flickity_js', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/flickity.pkgd.min.js', array('jquery') );
+		wp_enqueue_style( 'adminz_flickity_css', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/flickity.min.css');
+	}	
 	$adminz = new Adminz;
-	extract(shortcode_atts(array(
+	$map = shortcode_atts(array(
         'ids'    => '',
         'draggable'=> 'true', 
         'freeScroll'=> 'false',
+        'imagesLoaded' => 'true',
         'wrapAround'=> 'true',
         'groupCells'=> 'false',
         'autoPlay'=> 'false',
         'pauseAutoPlayOnHover'=> 'false',
         'fade'=> 'false',
         'adaptiveHeight'=> 'true',
-        'asNavFor'=> '',
+        'asNavFor'=> '.adminz_flickity',
         'selectedAttraction'=> '0.025',
 		'friction'=> '0.28',
 		'lazyLoad'=> 'false',
@@ -131,47 +138,51 @@ function adminz_flickity_function($atts){
 		'initialIndex'=> '0',
 		'accessibility'=> 'true',
 		'setGallerySize'=> 'true',
-		'resize'=> 'true',
+		'resize'=> 'false',
 		'cellAlign'=> 'left',
 		'percentPosition'=> 'false',
 		'rightToLeft'=> 'false',
 		'prevNextButtons'=> 'true',
 		'pageDots'=> 'true',
 		'arrowShape'=> ''
-    ), $atts));
-
+    ), $atts);    
+	extract($map);	
     ob_start();
+    $data_flickity = '"":""';
+    foreach ($map as $key => $value) {
+    	if($value){
+    		$data_flickity.=',"'.$key.'":"'.$value.'"';
+    	}
+    }
     ?>
-    <div class="adminz_flickity" data-flickity='{ 
-    	"draggable": <?php echo $draggable;?>,
-        "freeScroll": <?php echo $freeScroll;?>,
-        "wrapAround": <?php echo $wrapAround;?>,
-        "groupCells": <?php echo $groupCells;?>,
-        "autoPlay": <?php echo $autoPlay;?>,
-        "pauseAutoPlayOnHover": <?php echo $pauseAutoPlayOnHover;?>,
-        "fade": <?php echo $fade;?>,
-        "adaptiveHeight": <?php echo $adaptiveHeight;?>,
-        "asNavFor": "<?php echo $asNavFor;?>",
-        "selectedAttraction": <?php echo $selectedAttraction;?>,
-		"friction": <?php echo $friction;?>,
-		"lazyLoad": <?php echo $lazyLoad;?>,
-		"cellSelector": "<?php echo $cellSelector;?>",
-		"initialIndex": <?php echo $initialIndex;?>,
-		"accessibility": <?php echo $accessibility;?>,
-		"setGallerySize": <?php echo $setGallerySize;?>,
-		"resize": <?php echo $resize;?>,
-		"cellAlign": "<?php echo $cellAlign;?>",
-		"percentPosition": <?php echo $percentPosition;?>,
-		"rightToLeft": <?php echo $rightToLeft;?>,
-		"prevNextButtons": <?php echo $prevNextButtons;?>,
-		"pageDots": <?php echo $pageDots;?>,
-		"arrowShape": "<?php echo $arrowShape;?>"
-	}'>
+    <div class="adminz_flickity main-carousel" data-flickity='{<?php echo $data_flickity; ?>}'>
 	  <?php 
-		$ids = explode(',', $ids);
-		if(!empty($ids) and is_array($ids)){
-			foreach ($ids as $id) {
-				echo wp_get_attachment_image($id,'full');
+		$idss = explode(',', $ids);
+		if(!empty($idss) and is_array($idss)){
+			foreach ($idss as $id) {
+				$src = wp_get_attachment_image_src( $id, 'full',false );
+  				echo '<img src="'.$src[0].'"/>';
+				//echo wp_get_attachment_image($id,'full');
+				?>
+				<!-- <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/82/orange-tree.jpg" alt="orange tree" /> -->
+				<?php
+				
+			}
+		}
+		?>
+	</div>
+	<div class="adminz_flickity main-carousel" data-flickity='{<?php echo $data_flickity; ?>}'>
+	  <?php 
+		$idss = explode(',', $ids);
+		if(!empty($idss) and is_array($idss)){
+			foreach ($idss as $id) {
+				$src = wp_get_attachment_image_src( $id, 'full',false );
+  				echo '<div style="max-width: 20%"/><img src="'.$src[0].'"/></div>';
+				//echo wp_get_attachment_image($id,'full');
+				?>
+				<!-- <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/82/orange-tree.jpg" alt="orange tree" /> -->
+				<?php
+				
 			}
 		}
 		?>
