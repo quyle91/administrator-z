@@ -42,17 +42,9 @@ class ADMINZ_OtherTools extends Adminz
 	    	];
 	        if (in_array($_FILES['file']['type'][$i], $arr_img_ext)) {
 	        	$html_item['type_support'] = true;
-	        	$searchname = sanitize_title(str_replace([".jpg",".jpeg",".png",".gif"], "", $filename));
-	        	$args = array(	        
-			        'name' => $searchname,
-			        'post_type'=> 'attachment',
-			    );     
-			    $olds = get_posts( $args );
-			    $old = 0;
-			    if($olds){
-			        $old = $olds[0];
-			    }
-
+	        	global $wpdb;
+    			$result = $wpdb->get_var( $wpdb->prepare( "SELECT * FROM $wpdb->posts WHERE guid like '%".$filename."' LIMIT 1" ) );
+    			$old = get_post($result);
 	        	if($old){
 	        		$html_item['replaced'] = true;
 
@@ -152,13 +144,13 @@ class ADMINZ_OtherTools extends Adminz
 		?>
 		<table class="form-table">
         	<tr valign="top">
-        		<th><h3>Replace Image </h3></th>
+        		<th><h3>Image </h3></th>
         		<td>
         			
         		</td>
         	</tr>	  
         	<tr valign="top">
-        		<th>Input your image</th>
+        		<th>Replace Image</th>
         		<td>
         			<form class="fileUpload" enctype="multipart/form-data">
 					    <div class="form-group">

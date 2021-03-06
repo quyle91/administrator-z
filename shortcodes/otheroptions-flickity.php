@@ -14,6 +14,15 @@ function adminz_flickity(){
 				'type'       => 'gallery',
 				'heading'	=> __('Images'),
 			),
+			'usethumbnails'=>array(
+                'type' => 'checkbox',
+                'heading'   =>'usethumbnails',
+                'default' => 'true'
+            ),
+            'thumbnailscol'=> array(
+				'type'=>'textfield',
+				'heading'=> 'thumbnailscol'
+			),
 			'draggable'=> array(
 				'type'=>'textfield',
 				'heading'=> 'draggable'
@@ -21,6 +30,10 @@ function adminz_flickity(){
 	        'freeScroll'=> array(
 	        	'type'=>'textfield',
 	        	'heading'=> 'freeScroll'
+	        ),
+	        'contain'=> array(
+	        	'type'=>'textfield',
+	        	'heading'=> 'contain'
 	        ),
  			'wrapAround'=> array(
 	        	'type'=>'textfield',
@@ -37,10 +50,6 @@ function adminz_flickity(){
 	        'pauseAutoPlayOnHover'=> array(
 	        	'type'=>'textfield',
 	        	'heading'=> 'pauseAutoPlayOnHover'
-	        ),
-	        'fade'=> array(
-	        	'type'=>'textfield',
-	        	'heading'=> 'fade'
 	        ),
 	        'adaptiveHeight'=> array(
 	        	'type'=>'textfield',
@@ -113,22 +122,29 @@ function adminz_flickity(){
         ),
     ));
 }
-function adminz_flickity_function($atts){
-	if(!in_array('Flatsome', [wp_get_theme()->name, wp_get_theme()->parent_theme])){
-		wp_enqueue_script( 'adminz_flickity_js', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/flickity.pkgd.min.js', array('jquery') );
+function adminz_flickity_function($atts){	
+	wp_enqueue_style( 'adminz_fix_flickity_css', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/custom_flickity.css');
+	if(in_array('Flatsome', [wp_get_theme()->name, wp_get_theme()->parent_theme])){		
+		wp_enqueue_script( 'adminz_flickity_config' , plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/adminz_flickity_config.js', array('flatsome-js'));
+	}else{
 		wp_enqueue_style( 'adminz_flickity_css', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/flickity.min.css');
-	}	
+		wp_enqueue_script( 'adminz_flickity_js', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/flickity.pkgd.min.js', array('jquery') );
+		wp_enqueue_script( 'adminz_flickity_config' , plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/adminz_flickity_config.js', array('adminz_flickity_js'));
+	}
 	$adminz = new Adminz;
 	$map = shortcode_atts(array(
         'ids'    => '',
+        'usethumbnails'=>true,
+        'thumbnailscol' => 4,
+        // slider args
         'draggable'=> 'true', 
         'freeScroll'=> 'false',
+        'contain'=> 'true',
         'imagesLoaded' => 'true',
         'wrapAround'=> 'true',
         'groupCells'=> 'false',
         'autoPlay'=> 'false',
-        'pauseAutoPlayOnHover'=> 'false',
-        'fade'=> 'false',
+        'pauseAutoPlayOnHover'=> 'false',        
         'adaptiveHeight'=> 'true',
         'asNavFor'=> '.adminz_flickity',
         'selectedAttraction'=> '0.025',
@@ -138,59 +154,73 @@ function adminz_flickity_function($atts){
 		'initialIndex'=> '0',
 		'accessibility'=> 'true',
 		'setGallerySize'=> 'true',
-		'resize'=> 'false',
+		'resize'=> 'true',
 		'cellAlign'=> 'left',
 		'percentPosition'=> 'false',
 		'rightToLeft'=> 'false',
 		'prevNextButtons'=> 'true',
-		'pageDots'=> 'true',
-		'arrowShape'=> ''
+		'pageDots'=> 'false',
+		'arrowShape'=> '',
+		/*'watchCSS'=> 'true'*/
     ), $atts);    
-	extract($map);	
-    ob_start();
-    $data_flickity = '"":""';
+	extract($map);		
+    ob_start();    
+    $data_flickity = [];
     foreach ($map as $key => $value) {
     	if($value){
-    		$data_flickity.=',"'.$key.'":"'.$value.'"';
+    		if(!($value == 'true' or $value == 'false' or is_bool($value))){
+    			$value = '"'.$value.'"';
+			}
+			$data_flickity[]='"'.$key.'":'.$value.'';			
     	}
     }
-    ?>
-    <div class="adminz_flickity main-carousel" data-flickity='{<?php echo $data_flickity; ?>}'>
+    ?>    
+    <div class="adminz_flickity slider mb-half" data-adminz='{<?php echo implode(",", $data_flickity ); ?>}'>
 	  <?php 
 		$idss = explode(',', $ids);
 		if(!empty($idss) and is_array($idss)){
 			foreach ($idss as $id) {
 				$src = wp_get_attachment_image_src( $id, 'full',false );
-  				echo '<img src="'.$src[0].'"/>';
-				//echo wp_get_attachment_image($id,'full');
-				?>
-				<!-- <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/82/orange-tree.jpg" alt="orange tree" /> -->
-				<?php
-				
+				if($src){
+					echo '<img src="'.$src[0].'"/>';
+				}  				
 			}
 		}
 		?>
 	</div>
-	<div class="adminz_flickity main-carousel" data-flickity='{<?php echo $data_flickity; ?>}'>
-	  <?php 
-		$idss = explode(',', $ids);
-		if(!empty($idss) and is_array($idss)){
-			foreach ($idss as $id) {
-				$src = wp_get_attachment_image_src( $id, 'full',false );
-  				echo '<div style="max-width: 20%"/><img src="'.$src[0].'"/></div>';
-				//echo wp_get_attachment_image($id,'full');
-				?>
-				<!-- <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/82/orange-tree.jpg" alt="orange tree" /> -->
-				<?php
-				
+	<?php if($usethumbnails){ ?>	
+		<?php 
+		$map['wrapAround'] = 'false';
+		$data_flickity2 = [];
+		foreach ($map as $key => $value) {
+	    	if($value){
+	    		if(!($value == 'true' or $value == 'false' or is_bool($value))){
+	    			$value = '"'.$value.'"';
+				}			
+	    		$data_flickity2[]='"'.$key.'":'.$value.'';
+	    	}
+	    }
+		?>	
+		<div class="adminz_flickity slider product-thumbnails row" data-adminz='{<?php echo implode(",", $data_flickity2 ); ?>}'>
+		  <?php 
+			$idss = explode(',', $ids);
+			if(!empty($idss) and is_array($idss)){
+				foreach ($idss as $id) {
+					$src = wp_get_attachment_image_src( $id, array(100,100),false );
+					if($src){
+						?>
+						<div class="col" style="width: <?php echo (100/$thumbnailscol); ?>% !important;">
+							<a>
+								<img src="<?php echo $src[0]; ?> "/>
+							</a>
+						</div>
+						<?php 
+					}	  				
+	 			}
 			}
-		}
-		?>
-	</div>
+			?>
+		</div>
+	<?php } ?>
 	<?php
     return ob_get_clean();
 }
-/*add_action('wp_enqueue_scripts',function (){
-	wp_enqueue_script( 'adminz_flickity_js', plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/fotorama.js', array( 'jquery' ) );
-	wp_enqueue_style( 'adminz_flickity_css', plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/fotorama.css');
-});*/
