@@ -1,10 +1,10 @@
 <?php 
 namespace Adminz\Admin;
 
-class ADMINZ_Fonts extends Adminz {
-	public $options_group = "adminz_fonts";
-	public $title = "Fonts";
-	public $slug = "fonts";	
+class ADMINZ_Enqueue extends Adminz {
+	public $options_group = "adminz_enqueue";
+	public $title = "Enqueue";
+	public $slug = "enqueue";	
 	public $font_upload_dir = "/administrator-z/fonts";
 	function __construct() {
 		add_filter( 'adminz_setting_tab', [$this,'register_tab']);
@@ -12,20 +12,26 @@ class ADMINZ_Fonts extends Adminz {
 		add_action( 'wp_head', [$this,'enqueue_lato'],101);
 		add_action( 'wp_head', [$this,'enqueue_custom_font'],101);
 		add_action( 'wp_ajax_adminz_f_font_upload', [$this,'font_upload_callback']);	
-		add_action( 'wp_ajax_adminz_f_delete_file', [$this, 'delete_file']);
-		add_action( 'wp_ajax_adminz_f_get_fields', [$this, 'get_fields']);
+		add_action( 'wp_ajax_adminz_f_delete_font', [$this, 'delete_font']);
+		add_action( 'wp_ajax_adminz_f_get_fonts', [$this, 'get_fonts']);
  	}
- 	function delete_file($filepath = false){
+ 	function delete_font($filepath = false){
  		if(!$filepath){
  			$filepath = $_POST['filepath'];
+ 		} 		
+ 		$adminz_fonts_uploaded = json_decode(get_option( 'adminz_fonts_uploaded','' ));
+ 		foreach ($adminz_fonts_uploaded as $key => $value) {
+ 			if(strpos($value[0], basename($filepath))){
+ 				unset($adminz_fonts_uploaded[$key]);
+ 			}
  		}
  		if(file_exists($filepath)){
  			wp_delete_file( $filepath );
+ 			update_option( 'adminz_fonts_uploaded', json_encode( array_values($adminz_fonts_uploaded)));
  			$message = "Done!";
  		}else{
  			$message = "No file exits";
  		}
-
  		wp_send_json_success($message);
         wp_die();
  	}
@@ -87,12 +93,12 @@ class ADMINZ_Fonts extends Adminz {
 		register_setting( $this->options_group, 'adminz_custom_css_fonts' );
 		register_setting( $this->options_group, 'adminz_choose_font_lato' );
 	}
-	function get_fields(){
+	function get_fonts(){
 		ob_start();
 		$font_files = glob(wp_upload_dir()['basedir'].$this->font_upload_dir.'/*');
 		if(!empty($font_files) and is_array($font_files)){
 			?>
-			<textarea style="display: none;" cols="100" rows="10" name="adminz_fonts_uploaded"><?php echo get_option('adminz_fonts_uploaded',''); ?></textarea>
+			<textarea style="" cols="100" rows="10" name="adminz_fonts_uploaded"><?php echo get_option('adminz_fonts_uploaded',''); ?></textarea>
 			<div style="padding: 10px; background: white;">            						
 				<table>
 					<tr>
@@ -115,15 +121,15 @@ class ADMINZ_Fonts extends Adminz {
 								</tr>
 								<tr>
 									<td><code>font-weight:</code></td>
-									<td><input type="" name="font-weight" required></td>
+									<td><input type="" name="font-weight"></td>
 								</tr>
 								<tr>
 									<td><code>font-style:</code></td>
-									<td><input type="" name="font-style" required></td>
+									<td><input type="" name="font-style"></td>
 								</tr>
 								<tr>
 									<td><code>font-stretch:</code></td>
-									<td><input type="" name="font-stretch" required></td>
+									<td><input type="" name="font-stretch"></td>
 								</tr>
 							</table>            								
 						</td>
@@ -135,7 +141,7 @@ class ADMINZ_Fonts extends Adminz {
 				}
 			?>
 				<tr>
-					<td><textarea style="width: 100%; background: #f2f2f2; border: 3px solid gray;" rows="10" name="adminz_custom_css_fonts"><?php echo get_option('adminz_custom_css_fonts',''); ?></textarea></td>
+					<td><textarea style="width: 100%; background: #f2f2f2; border: 3px solid gray;" rows="10" name="adminz_custom_css_fonts" placeholder="Your custom css here..."><?php echo get_option('adminz_custom_css_fonts',''); ?></textarea></td>
 					<td></td>
 				</tr>
 			</table>			
@@ -171,21 +177,21 @@ class ADMINZ_Fonts extends Adminz {
 						}
 					}
 				}
-				get_fields();
-				function get_fields(){
-					$(".get_fields").html("");
+				get_fonts();
+				function get_fonts(){
+					$(".get_fonts").html("");
 					$.ajax({
                         type : "post",
                         dataType : "json",
                         url : '<?php echo admin_url('admin-ajax.php'); ?>',
                         data : {
-                            action: "adminz_f_get_fields"
+                            action: "adminz_f_get_fonts"
                         },
                         context: this,
                         beforeSend: function(){ },
                         success: function(response) {
                         	if(response.data.length){
-                        		$(".get_fields").html(response.data);
+                        		$(".get_fonts").html(response.data);
                         	}
                         	fill_data_fields();
                         },
@@ -209,7 +215,9 @@ class ADMINZ_Fonts extends Adminz {
 							font_style,
 							font_stretch,
 							]);						
-					});					
+					});
+					//fonts_uploaded = $.extend({}, fonts_uploaded);
+
 					$('textarea[name="adminz_fonts_uploaded"]').val(JSON.stringify(fonts_uploaded));
 				});					
 			    $('body').on('click', '.delete_file_font', function() {
@@ -219,14 +227,14 @@ class ADMINZ_Fonts extends Adminz {
                         dataType : "json",
                         url : '<?php echo admin_url('admin-ajax.php'); ?>',
                         data : {
-                            action: "adminz_f_delete_file",
+                            action: "adminz_f_delete_font",
                             filepath : font_path
                         },
                         context: this,
                         beforeSend: function(){ },
                         success: function(response) {
                             if(response.success) {                            	
-                            	get_fields();
+                            	get_fonts();
                             }
                             else {
                                 alert('There is an error');
@@ -273,7 +281,7 @@ class ADMINZ_Fonts extends Adminz {
 			            		html_run += "</tr>";
 			            	}
 			            	$('.data_test').html(html_run);
-			            	get_fields();
+			            	get_fonts();
 			            }
 			        });
 			    });
@@ -312,7 +320,7 @@ class ADMINZ_Fonts extends Adminz {
 	            	<th scope="row">
 	            		Fonts uploaded
 	            	</th>
-	            	<td class="get_fields">
+	            	<td class="get_fonts">
 	            	</td>	            	
 	            </tr>
 	        	<tr valign="top">
@@ -336,14 +344,13 @@ class ADMINZ_Fonts extends Adminz {
 		return ob_get_clean();
 	}
 	function enqueue_custom_font(){
-		$adminz_fonts_uploaded = get_option( 'adminz_fonts_uploaded','' );
-		$adminz_fonts_uploaded = json_decode( $adminz_fonts_uploaded );
-		$adminz_custom_css_fonts = get_option( 'adminz_custom_css_fonts','' );
+		$fonts = json_decode(get_option( 'adminz_fonts_uploaded','' ));
+		$css = get_option( 'adminz_custom_css_fonts','' );
 		ob_start();
-		if(!empty($adminz_fonts_uploaded) and is_array($adminz_fonts_uploaded)){			
+		if(!empty($fonts) and is_array($fonts)){			
 			?>
 			<style id="adminz_custom_fonts" type="text/css">
-				<?php foreach ($adminz_fonts_uploaded as $font) {
+				<?php foreach ($fonts as $font) {
 					?>
 					@font-face {
 						src: url(<?php echo $font[0]; ?>);
@@ -355,7 +362,7 @@ class ADMINZ_Fonts extends Adminz {
 					<?php
 				} ?>
 
-				<?php if($adminz_custom_css_fonts){ echo $adminz_custom_css_fonts; } ?>
+				<?php if($css){ echo $css; } ?>
 			</style>
 			<?php
 		}

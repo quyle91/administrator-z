@@ -201,8 +201,9 @@ function adminz_fotorama(){
 function adminz_fotorama_function($atts){
 	wp_enqueue_script( 'adminz_fotorama_js', plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/fotorama.js', array( 'jquery' ) );
 	wp_enqueue_style( 'adminz_fotorama_css', plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/fotorama.css');
+	wp_enqueue_script( 'adminz_fotorama_config' , plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/adminz_fotorama_config.js', array('jquery'));
 	$adminz = new Adminz;
-	extract(shortcode_atts(array(
+	$map = shortcode_atts(array(
         'ids'    => '',
         'width'=> '',
 		'minwidth'=> '',
@@ -240,49 +241,18 @@ function adminz_fotorama_function($atts){
 		'shuffle'=> '',
 		'direction'=> '',
 		'spinner'=> '',        
-    ), $atts));
-
+    ), $atts);
+    extract($map);
+    
+    $datahtml = "";
+    foreach ($map as $key => $value) {
+    	if($value){
+    		$datahtml.= 'data-'.$key.'="'.$value.'" ';
+    	}
+    }
     ob_start();
-    ?>
-    <!-- Add images to <div class="fotorama"></div> -->
-	<div class="adminz_fotorama" 
-		data-width="<?php echo $width; ?>" 
-		data-minwidth="<?php echo $minwidth; ?>" 
-		data-maxwidth="<?php echo $maxwidth; ?>" 
-		data-height="<?php echo $height; ?>" 
-		data-minheight="<?php echo $minheight; ?>" 
-		data-maxheight="<?php echo $maxheight; ?>" 
-		data-ratio="<?php echo $ratio; ?>" 
-		data-margin="<?php echo $margin; ?>" 
-		data-glimpse="<?php echo $glimpse; ?>" 
-		data-nav="<?php echo $nav; ?>" 
-		data-navposition="<?php echo $navposition; ?>" 
-		data-navwidth="<?php echo $navwidth; ?>" 
-		data-thumbwidth="<?php echo $thumbwidth; ?>" 
-		data-thumbheight="<?php echo $thumbheight; ?>" 
-		data-thumbmargin="<?php echo $thumbmargin; ?>" 
-		data-thumbborderwidth="<?php echo $thumbborderwidth; ?>" 
-		data-allowfullscreen="<?php echo $allowfullscreen; ?>" 
-		data-fit="<?php echo $fit; ?>" 
-		data-thumbfit="<?php echo $thumbfit; ?>" 
-		data-transition="<?php echo $transition; ?>" 
-		data-clicktransition="<?php echo $clicktransition; ?>" 
-		data-transitionduration="<?php echo $transitionduration; ?>" 
-		data-captions="<?php echo $captions; ?>" 
-		data-hash="<?php echo $hash; ?>" 
-		data-startindex="<?php echo $startindex; ?>" 
-		data-loop="<?php echo $loop; ?>" 
-		data-autoplay="<?php echo $autoplay; ?>" 
-		data-stopautoplayontouch="<?php echo $stopautoplayontouch; ?>" 
-		data-keyboard="<?php echo $keyboard; ?>" 
-		data-arrows="<?php echo $arrows; ?>" 
-		data-click="<?php echo $click; ?>" 
-		data-swipe="<?php echo $swipe; ?>" 
-		data-trackpad="<?php echo $trackpad; ?>" 
-		data-shuffle="<?php echo $shuffle; ?>" 
-		data-direction="<?php echo $direction; ?>" 
-		data-spinner="<?php echo $spinner; ?>" 
-		>
+    ?>    
+	<div class="adminz_fotorama" <?php echo $datahtml; ?>>
 		<?php 
 		$ids = explode(',', $ids);
 		if(!empty($ids) and is_array($ids)){
@@ -292,19 +262,6 @@ function adminz_fotorama_function($atts){
 		}
 		?>
 	</div>
-	<script type="text/javascript">
-		jQuery(function($){
-			$('.adminz_fotorama').each(function(){
-				$(this).fotorama({
-				  
-				});
-			});
-		});
-	</script>
 	<?php
     return ob_get_clean();
 }
-/*add_action('wp_enqueue_scripts',function (){
-	wp_enqueue_script( 'adminz_fotorama_js', plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/fotorama.js', array( 'jquery' ) );
-	wp_enqueue_style( 'adminz_fotorama_css', plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/fotorama.css');
-});*/

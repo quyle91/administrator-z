@@ -19,7 +19,7 @@ function adminz_namespace() {
 	new Adminz\Admin\Adminz;
 	new Adminz\Admin\ADMINZ_ThemeOptions;
 	new Adminz\Admin\ADMINZ_DefaultOptions;
-	new Adminz\Admin\ADMINZ_Fonts;
+	new Adminz\Admin\ADMINZ_Enqueue;
 	new Adminz\Admin\ADMINZ_ContactGroup;
 	new Adminz\Admin\ADMINZ_Flatsome;
 	new Adminz\Admin\ADMINZ_Elementor;
