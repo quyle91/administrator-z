@@ -11,6 +11,7 @@ class ADMINZ_Enqueue extends Adminz {
 		add_action(	'admin_init', [$this,'register_option_setting'] );
 		add_action( 'wp_head', [$this,'enqueue_lato'],101);
 		add_action( 'wp_head', [$this,'enqueue_custom_font'],101);
+		add_action( 'wp_enqueue_scripts', [$this,'enqueue_registed_scripts'] );
 		add_action( 'wp_ajax_adminz_f_font_upload', [$this,'font_upload_callback']);	
 		add_action( 'wp_ajax_adminz_f_delete_font', [$this, 'delete_font']);
 		add_action( 'wp_ajax_adminz_f_get_fonts', [$this, 'get_fonts']);
@@ -87,12 +88,7 @@ class ADMINZ_Enqueue extends Adminz {
 			'html'=> $this->tab_html()
 		);
 		return $tabs;
-	}
-	function register_option_setting() {
-		register_setting( $this->options_group, 'adminz_fonts_uploaded' );
-		register_setting( $this->options_group, 'adminz_custom_css_fonts' );
-		register_setting( $this->options_group, 'adminz_choose_font_lato' );
-	}
+	}	
 	function get_fonts(){
 		ob_start();
 		$font_files = glob(wp_upload_dir()['basedir'].$this->font_upload_dir.'/*');
@@ -158,6 +154,103 @@ class ADMINZ_Enqueue extends Adminz {
 		}
 		wp_send_json_success(ob_get_clean());
         wp_die();
+	}	
+	function tab_html(){
+		ob_start();
+		?>
+		<form method="post" action="options.php">
+	        <?php 
+	        settings_fields($this->options_group);
+	        do_settings_sections($this->options_group);
+	        ?>
+	        <table class="form-table">
+	        	<tr valign="top">
+					<th scope="row">
+						<h3>Custom font</h3>
+					</th>
+				</tr>
+				<tr valign="top">
+	                <th scope="row">Upload your font files</th>
+	                <td>
+						<form class="fileUpload" enctype="multipart/form-data">
+						    <div class="form-group">
+						        <label><?php _e('Choose File:'); ?></label>
+						        <input type="file" id="upload_fonts" accept="*" multiple />
+						    </div>
+						</form>	
+						<br>
+						<div class="data_test"></div>						
+	                </td>
+	            </tr>
+	            <tr valign="top">
+	            	<th scope="row">
+	            		Fonts uploaded
+	            	</th>
+	            	<td class="get_fonts">
+	            	</td>	            	
+	            </tr>
+				<tr valign="top">
+	                <th scope="row">Import Lato font</th>
+	                <td>
+ 						<label>
+	                		<input type="checkbox" name="adminz_choose_font_lato" <?php if(get_option('adminz_choose_font_lato') =="on") echo "checked"; ?>> Lato
+	                	</label><br>
+	                </td>
+	            </tr>	
+	            <tr valign="top">
+					<th scope="row">
+						<h3>JS Libraries</h3>
+					</th>
+				</tr> 
+				<tr valign="top">
+	                <th scope="row">Registed</th>
+	                <td>
+	                	<?php 	     
+	                	
+						foreach ($GLOBALS['wp_scripts']->registered as $handle=> $obj){
+							$option = (array)get_option('adminz_enqueue_js_');
+							$checked = in_array($handle,$option)? 'checked' : "" ;
+							$link = $obj->src.'<a target="blank" href="'.$obj->src.'"></a>';
+							ob_start();
+							echo "<p>handle:</p>";
+							echo '<code>'; print_r($obj->handle); echo '</code>'; 
+							echo "<p>src:</p>";
+							echo '<code>'; print_r($obj->src); echo '</code>'; 
+							echo "<p>deps:</p>";
+							echo '<code>'; print_r($obj->deps); echo '</code>'; 
+							echo "<p>ver:</p>";
+							echo '<code>'; print_r($obj->ver); echo '</code>'; 
+							echo "<p>args:</p>";
+							echo '<code>'; print_r($obj->args); echo '</code>'; 
+							//print_r($obj->extra);
+							echo "<p>textdomain:</p>";
+							echo '<code>'; print_r($obj->textdomain); echo '</code>'; 
+							echo "<p>translations_path:</p>";
+							echo '<code>'; print_r($obj->translations_path); echo '</code>'; 
+							$objhtml = ob_get_clean();
+							echo '<label><input class="adminz_enqueue_js_" type="checkbox" name="adminz_enqueue_js_[]" value="'.$handle.'" '.$checked.' /> '.$handle.'<code>'.$link.'</code></label><button class="show_js_data" type="button" style="border: none; cursor: pointer;">...</button></br>';
+							echo "<div class='more_info hidden'><pre>";echo $objhtml; echo "</pre></div>";
+						}
+						?>
+	                	<p><em>https://developer.wordpress.org/reference/functions/wp_enqueue_script/</em></p> 
+                	</td>
+	            </tr>           
+ 			</table>		
+	        <?php echo submit_button(); ?>
+	    </form>
+	    <script type="text/javascript">
+	    	var a = <?php echo json_encode($GLOBALS['wp_scripts']) ?>;
+	    	console.log(a);
+	    </script>
+	    <style type="text/css">
+	    	.more_info:not(.hidden){
+	    		padding: 10px;
+	    		background: white;
+	    	}
+	    </style>
+		<?php
+		echo $this->tab_scripts();
+		return ob_get_clean();
 	}
 	function tab_scripts(){
 		?>
@@ -285,63 +378,12 @@ class ADMINZ_Enqueue extends Adminz {
 			            }
 			        });
 			    });
+			    $('body').on('click', '.show_js_data', function(){
+			    	var target = $(this).next().next(".more_info").toggleClass('hidden');
+			    });
 			});
 		</script>
 		<?php
-	}
-	function tab_html(){
-		ob_start();
-		?>
-		<form method="post" action="options.php">
-	        <?php 
-	        settings_fields($this->options_group);
-	        do_settings_sections($this->options_group);
-	        ?>
-	        <table class="form-table">
-	        	<tr valign="top">
-					<th scope="row">
-						<h3>Fonts Upload</h3>
-					</th>
-				</tr>
-				<tr valign="top">
-	                <th scope="row">Upload your font files</th>
-	                <td>
-						<form class="fileUpload" enctype="multipart/form-data">
-						    <div class="form-group">
-						        <label><?php _e('Choose File:'); ?></label>
-						        <input type="file" id="upload_fonts" accept="*" multiple />
-						    </div>
-						</form>	
-						<br>
-						<div class="data_test"></div>						
-	                </td>
-	            </tr>
-	            <tr valign="top">
-	            	<th scope="row">
-	            		Fonts uploaded
-	            	</th>
-	            	<td class="get_fonts">
-	            	</td>	            	
-	            </tr>
-	        	<tr valign="top">
-					<th scope="row">
-						<h3>Fonts Supported</h3>
-					</th>
-				</tr>
-				<tr valign="top">
-	                <th scope="row">Import Lato font</th>
-	                <td>
- 						<label>
-	                		<input type="checkbox" name="adminz_choose_font_lato" <?php if(get_option('adminz_choose_font_lato') =="on") echo "checked"; ?>> Lato
-	                	</label><br>
-	                </td>
-	            </tr>	            
- 			</table>		
-	        <?php submit_button(); ?>
-	    </form>
-		<?php
-		echo $this->tab_scripts();
-		return ob_get_clean();
 	}
 	function enqueue_custom_font(){
 		$fonts = json_decode(get_option( 'adminz_fonts_uploaded','' ));
@@ -417,7 +459,19 @@ class ADMINZ_Enqueue extends Adminz {
  		}
  		$buffer = ob_get_clean();
  		echo str_replace(array("\r\n", "\r", "\n", "\t", '  ', '    ', '    '), '', $buffer);
-
  	}
-
+ 	function enqueue_registed_scripts(){
+ 		$option = (array)get_option('adminz_enqueue_js_');
+ 		if(!empty($option) and is_array($option)){ 			
+ 			foreach ($option as $key => $value) {
+ 				wp_enqueue_script($value);	
+ 			} 			
+ 		}
+ 	}
+ 	function register_option_setting() {
+		register_setting( $this->options_group, 'adminz_fonts_uploaded' );
+		register_setting( $this->options_group, 'adminz_custom_css_fonts' );
+		register_setting( $this->options_group, 'adminz_choose_font_lato' );
+		register_setting( $this->options_group, 'adminz_enqueue_js_' );
+	}
  }

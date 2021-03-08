@@ -258,7 +258,7 @@ li.current-dropdown>.nav-dropdown, .next-prev-thumbs li.has-dropdown:hover>.nav-
 #secondary .widget .is-divider,
 #product-sidebar .widget .is-divider,
 #shop-sidebar .widget .is-divider,
-.sidebar-wrapper>.widget .is-divider{
+.sidebar-wrapper .widget .is-divider{
 	display: none;
 }
 .mfp-content>.lightbox-content{
@@ -268,7 +268,7 @@ li.current-dropdown>.nav-dropdown, .next-prev-thumbs li.has-dropdown:hover>.nav-
 #secondary .widget .search-field,
 #product-sidebar .widget .search-field,
 #shop-sidebar .widget .search-field,
-.sidebar-wrapper>.widget .search-field,
+.sidebar-wrapper .widget .search-field,
 .mfp-content .search-field{
 	border-top-left-radius: 13px;
 	border-bottom-left-radius: 13px;
@@ -280,7 +280,7 @@ li.current-dropdown>.nav-dropdown, .next-prev-thumbs li.has-dropdown:hover>.nav-
 #secondary .widget .ux-search-submit,
 #product-sidebar .widget .ux-search-submit,
 #shop-sidebar .widget .ux-search-submit,
-.sidebar-wrapper>.widget .ux-search-submit,
+.sidebar-wrapper .widget .ux-search-submit,
 .mfp-content .ux-search-submit{
 	border-top-right-radius: 13px;
 	border-bottom-right-radius: 13px;
@@ -312,13 +312,15 @@ li.current-dropdown>.nav-dropdown, .next-prev-thumbs li.has-dropdown:hover>.nav-
 #secondary .widget>*:nth-child(3):not(.mp-video),
 #product-sidebar .widget>*:nth-child(3):not(.mp-video),
 #shop-sidebar .widget>*:nth-child(3):not(.mp-video),
-.sidebar-wrapper>.widget .menu{
+.sidebar-wrapper .widget .menu,
+.sidebar-wrapper .widget ul{
 	padding: 5px 13px 5px 13px;
 }
 #secondary .widget span.widget-title,
 #product-sidebar .widget span.widget-title,
 #shop-sidebar .widget span.widget-title,
-.sidebar-wrapper>.widget .widgettitle{    
+.sidebar-wrapper .widget .widgettitle,
+.sidebar-wrapper .widget .widget-title{    
     letter-spacing: 1px;
     padding: 16px 13px 9px 13px;
     margin-bottom: 5px;
@@ -334,7 +336,7 @@ li.current-dropdown>.nav-dropdown, .next-prev-thumbs li.has-dropdown:hover>.nav-
 #secondary .widget,
 #product-sidebar .widget,
 #shop-sidebar .widget,
-.sidebar-wrapper>.widget{
+.sidebar-wrapper .widget{
     border: none;
     border-radius: 13px;
     background: #ebebeb;
@@ -342,7 +344,7 @@ li.current-dropdown>.nav-dropdown, .next-prev-thumbs li.has-dropdown:hover>.nav-
 #secondary .widget ul>li+li,
 #product-sidebar .widget ul>li+li,
 #shop-sidebar .widget ul>li+li,
-.sidebar-wrapper>.widget ul>li+li{
+.sidebar-wrapper .widget ul>li+li{
     border-top: solid 1px #FFF;
     border-radius: 0px;
 }
