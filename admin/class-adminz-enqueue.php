@@ -94,7 +94,7 @@ class ADMINZ_Enqueue extends Adminz {
 		$font_files = glob(wp_upload_dir()['basedir'].$this->font_upload_dir.'/*');
 		if(!empty($font_files) and is_array($font_files)){
 			?>
-			<textarea style="" cols="100" rows="10" name="adminz_fonts_uploaded"><?php echo get_option('adminz_fonts_uploaded',''); ?></textarea>
+			<textarea style="display: none;" cols="100" rows="10" name="adminz_fonts_uploaded"><?php echo get_option('adminz_fonts_uploaded',''); ?></textarea>
 			<div style="padding: 10px; background: white;">            						
 				<table>
 					<tr>
@@ -113,19 +113,19 @@ class ADMINZ_Enqueue extends Adminz {
 								</tr>
 								<tr>
 									<td><code>font-family:</code></td>
-									<td><input type="" name="font-family" required></td>
+									<td><input style="width: 100%;" type="" name="font-family" required></td>
 								</tr>
 								<tr>
 									<td><code>font-weight:</code></td>
-									<td><input type="" name="font-weight"></td>
+									<td><input style="width: 100%;" type="" name="font-weight" required></td>
 								</tr>
 								<tr>
 									<td><code>font-style:</code></td>
-									<td><input type="" name="font-style"></td>
+									<td><input style="width: 100%;" type="" name="font-style" required></td>
 								</tr>
 								<tr>
 									<td><code>font-stretch:</code></td>
-									<td><input type="" name="font-stretch"></td>
+									<td><input style="width: 100%;" type="" name="font-stretch" required></td>
 								</tr>
 							</table>            								
 						</td>
@@ -146,7 +146,7 @@ class ADMINZ_Enqueue extends Adminz {
 				table.font-face-attributes td,
 				.data_test td
 				{
-					    padding: 5px 0px;
+					    padding: 0px 0px;
 						background: #f2f2f2;
 				}
 			</style>							
