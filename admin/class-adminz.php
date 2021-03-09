@@ -67,7 +67,8 @@ class Adminz {
 	}	
 	function adiminz_enqueue_js() {
 		if ( ! did_action( 'wp_enqueue_media' ) ) {wp_enqueue_media(); }
-	 	wp_enqueue_script( 'adminz_media_upload', plugin_dir_url(ADMINZ_BASENAME).'assets/js/media-uploader.js', array( 'jquery' ) );
+	 	wp_register_script( 'adminz_media_upload', plugin_dir_url(ADMINZ_BASENAME).'assets/js/media-uploader.js', array( 'jquery' ) );
+	 	wp_enqueue_script( 'adminz_media_upload');
 	}
 	function get_support_icons(){
 		$files = array_map('basename',glob(ADMINZ_DIR.'/assets/images/*.svg'));

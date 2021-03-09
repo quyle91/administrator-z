@@ -1,1 +1,1 @@
-.flickity-viewport{width: 100%;}
+.flickity-viewport{width: 100%;} .adminz_flickity:not(.flickity-enabled){-js-display: flex; display: -webkit-box; display: -ms-flexbox; -webkit-box-orient: horizontal; -webkit-box-direction: normal; -ms-flex-flow: row wrap; flex-flow: row wrap; white-space: nowrap; overflow-y: hidden; overflow-x: hidden; width: auto; } .adminz_flickity:not(.flickity-enabled)>*{display: inline-block; }

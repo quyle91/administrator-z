@@ -6,12 +6,12 @@ class ADMINZ_Enqueue extends Adminz {
 	public $title = "Enqueue";
 	public $slug = "enqueue";	
 	public $font_upload_dir = "/administrator-z/fonts";
-	function __construct() {
+	function __construct() {		
 		add_filter( 'adminz_setting_tab', [$this,'register_tab']);
-		add_action(	'admin_init', [$this,'register_option_setting'] );
-		add_action( 'wp_head', [$this,'enqueue_lato'],101);
-		add_action( 'wp_head', [$this,'enqueue_custom_font'],101);
-		add_action( 'wp_enqueue_scripts', [$this,'enqueue_registed_scripts'] );
+		add_action(	'admin_init', [$this,'register_option_setting'] );		
+		add_action( 'wp_enqueue_scripts', [$this,'enqueue_custom_font'],101);
+		add_action( 'wp_enqueue_scripts', [$this,'adminz_enqueue_scripts'] );
+		add_action( 'wp_enqueue_scripts', [$this,'adminz_enqueue_styles'] );
 		add_action( 'wp_ajax_adminz_f_font_upload', [$this,'font_upload_callback']);	
 		add_action( 'wp_ajax_adminz_f_delete_font', [$this, 'delete_font']);
 		add_action( 'wp_ajax_adminz_f_get_fonts', [$this, 'get_fonts']);
@@ -136,10 +136,6 @@ class ADMINZ_Enqueue extends Adminz {
 					<?php					
 				}
 			?>
-				<tr>
-					<td><textarea style="width: 100%; background: #f2f2f2; border: 3px solid gray;" rows="10" name="adminz_custom_css_fonts" placeholder="Your custom css here..."><?php echo get_option('adminz_custom_css_fonts',''); ?></textarea></td>
-					<td></td>
-				</tr>
 			</table>			
 			</div>
 			<style type="text/css">
@@ -190,25 +186,44 @@ class ADMINZ_Enqueue extends Adminz {
 	            	</td>	            	
 	            </tr>
 				<tr valign="top">
-	                <th scope="row">Import Lato font</th>
+	                <th scope="row">Fonts supported</th>
 	                <td>
  						<label>
-	                		<input type="checkbox" name="adminz_choose_font_lato" <?php if(get_option('adminz_choose_font_lato') =="on") echo "checked"; ?>> Lato
+	                		<input type="checkbox" name="adminz_choose_font_lato" <?php if(get_option('adminz_choose_font_lato') =="on") echo "checked"; ?>> Lato vietnamese
+	                	</label><br>
+	                	<?php 
+	                	$adminz_supported_font = (array)get_option( 'adminz_supported_font' );
+	                	?>
+	                	<label>
+	                		<input type="checkbox" name="adminz_supported_font[]" value="fontawesome" <?php if(in_array('fontawesome', $adminz_supported_font)) echo "checked"; ?>> Font Awesome <a target="_blank" href="<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/fontawesome/demo.html'; ?>"></a><a target="_blank" href="https://fontawesome.com/icons?d=gallery&p=2&m=free"></a>
+	                	</label><br>
+	                	<label>
+	                		<input type="checkbox" name="adminz_supported_font[]" value="icofont" <?php if(in_array('icofont', $adminz_supported_font)) echo "checked"; ?>> Icofont <a target="_blank" href="<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/icofont/demo.html'; ?>"></a>
+	                	</label><br>
+	                	<label>
+	                		<input type="checkbox" name="adminz_supported_font[]" value="eicons" <?php if(in_array('eicons', $adminz_supported_font)) echo "checked"; ?>> Eicons <a target="_blank" href="<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/eicons/demo.html'; ?>"></a>
 	                	</label><br>
 	                </td>
 	            </tr>	
 	            <tr valign="top">
+	            	<th>CSS</th>
+	            	<td>
+	            		<textarea style="width: 100%; background: #f2f2f2; border: 3px solid gray;" rows="10" name="adminz_custom_css_fonts" placeholder="Your custom css here..."><?php echo get_option('adminz_custom_css_fonts',''); ?></textarea>
+	            	</td>
+	            </tr>	
+	            <tr valign="top">
 					<th scope="row">
-						<h3>JS Libraries</h3>
+						<h3>CSS Libraries</h3>
 					</th>
-				</tr> 
+				</tr>  
 				<tr valign="top">
-	                <th scope="row">Registed</th>
-	                <td>
-	                	<?php 	     
-	                	
-						foreach ($GLOBALS['wp_scripts']->registered as $handle=> $obj){
-							$option = (array)get_option('adminz_enqueue_js_');
+					<th scope="row">
+						Wordpress Registered
+					</th>
+					<td>
+						<?php 
+						foreach ($GLOBALS['wp_styles']->registered as $handle => $obj) {
+							$option = (array)get_option('adminz_enqueue_registed_css_');
 							$checked = in_array($handle,$option)? 'checked' : "" ;
 							$link = $obj->src.'<a target="blank" href="'.$obj->src.'"></a>';
 							ob_start();
@@ -228,7 +243,60 @@ class ADMINZ_Enqueue extends Adminz {
 							echo "<p>translations_path:</p>";
 							echo '<code>'; print_r($obj->translations_path); echo '</code>'; 
 							$objhtml = ob_get_clean();
-							echo '<label><input class="adminz_enqueue_js_" type="checkbox" name="adminz_enqueue_js_[]" value="'.$handle.'" '.$checked.' /> '.$handle.'<code>'.$link.'</code></label><button class="show_js_data" type="button" style="border: none; cursor: pointer;">...</button></br>';
+							echo '<label><input class="adminz_enqueue_registed_css_" type="checkbox" name="adminz_enqueue_registed_css_[]" value="'.$handle.'" '.$checked.' /> '.$handle.'<code>'.$link.'</code></label><button class="show_js_data" type="button" style="border: none; cursor: pointer;">...</button></br>';
+							echo "<div class='more_info hidden'><pre>";echo $objhtml; echo "</pre></div>";
+						}
+						 ?>
+					</td>
+				</tr>            
+	            <tr valign="top">
+					<th scope="row">
+						<h3>JS Libraries</h3>
+					</th>
+				</tr> 
+				<tr valign="top">
+					<th scope="row">
+						JS supported
+					</th>
+					<td>
+						<?php 
+	                	$adminz_supported_js = (array)get_option( 'adminz_supported_js' );
+	                	?>
+						<label>
+	                		<input type="checkbox" name="adminz_supported_js[]" value="flickity" <?php if(in_array('flickity',$adminz_supported_js)) echo "checked"; ?>> Flickity
+	                	</label><br>
+	                	<label>
+	                		<input type="checkbox" name="adminz_supported_js[]" value="fotorama" <?php if(in_array('fotorama',$adminz_supported_js)) echo "checked"; ?>> Fotorama
+	                	</label><br>
+					</td>
+				</tr>
+				<tr valign="top">
+	                <th scope="row">Wordpress Registered</th>
+	                <td>
+	                	<?php 	     
+	                	
+						foreach ($GLOBALS['wp_scripts']->registered as $handle=> $obj){
+							$option = (array)get_option('adminz_enqueue_registed_js_');
+							$checked = in_array($handle,$option)? 'checked' : "" ;
+							$link = $obj->src.'<a target="blank" href="'.$obj->src.'"></a>';
+							ob_start();
+							echo "<p>handle:</p>";
+							echo '<code>'; print_r($obj->handle); echo '</code>'; 
+							echo "<p>src:</p>";
+							echo '<code>'; print_r($obj->src); echo '</code>'; 
+							echo "<p>deps:</p>";
+							echo '<code>'; print_r($obj->deps); echo '</code>'; 
+							echo "<p>ver:</p>";
+							echo '<code>'; print_r($obj->ver); echo '</code>'; 
+							echo "<p>args:</p>";
+							echo '<code>'; print_r($obj->args); echo '</code>'; 
+							//print_r($obj->extra);
+							echo "<p>textdomain:</p>";
+							echo '<code>'; print_r($obj->textdomain); echo '</code>'; 
+							echo "<p>translations_path:</p>";
+							echo '<code>'; print_r($obj->translations_path); echo '</code>'; 
+							$objhtml = ob_get_clean();
+							echo '<label><input class="adminz_enqueue_registed_js_" type="checkbox" name="adminz_enqueue_registed_js_[]" value="'.$handle.'" '.$checked.' /> '.$handle.'<code>'.$link.'</code></label><button class="show_js_data" type="button" style="border: none; cursor: pointer;">...</button></br>';
 							echo "<div class='more_info hidden'><pre>";echo $objhtml; echo "</pre></div>";
 						}
 						?>
@@ -386,6 +454,7 @@ class ADMINZ_Enqueue extends Adminz {
 		<?php
 	}
 	function enqueue_custom_font(){
+		$this->enqueue_supported_font();
 		$fonts = json_decode(get_option( 'adminz_fonts_uploaded','' ));
 		$css = get_option( 'adminz_custom_css_fonts','' );
 		ob_start();
@@ -403,75 +472,79 @@ class ADMINZ_Enqueue extends Adminz {
 					}
 					<?php
 				} ?>
-
-				<?php if($css){ echo $css; } ?>
+			</style>
+			<?php
+		}
+		if($css){ 
+			?>
+			<style id="adminz_custom_css" type="text/css">
+				<?php echo $css; ?>
 			</style>
 			<?php
 		}
 		$buffer = ob_get_clean();
  		echo str_replace(array("\r\n", "\r", "\n", "\t", '  ', '    ', '    '), '', $buffer);
 	}
-	function enqueue_lato(){
- 		ob_start();
- 		if(get_option('adminz_choose_font_lato') =="on"){
- 		?>
- 		<style id="adminz_choose_font_lato" type="text/css">
- 			@font-face {
-			  font-family: Lato;
-			  font-style: normal;
-			  font-weight: 400;
-			  src: url(<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/font/Lato-Regular.ttf'; ?>);
+	function enqueue_supported_font(){
+		if(get_option('adminz_choose_font_lato') =="on"){
+			wp_enqueue_style( 'adminz_lato',plugin_dir_url(ADMINZ_BASENAME).'assets/lato/all.css', array(), '1.0', $media = 'all' );
+		}
+		$adminz_supported_font = (array)get_option( 'adminz_supported_font' );
+		if(is_array($adminz_supported_font) and !empty($adminz_supported_font)){
+			foreach ($adminz_supported_font as $key => $value) {
+				switch ($value) {
+					case 'fontawesome':
+						wp_enqueue_style( 'adminz_fontawesome',plugin_dir_url(ADMINZ_BASENAME).'assets/fontawesome/css/all.min.css', array(), '5.15.2', $media = 'all' );
+						break;
+					case 'icofont':
+						wp_enqueue_style( 'adminz_icofont',plugin_dir_url(ADMINZ_BASENAME).'assets/icofont/icofont.min.css', array(), '1.0.1', $media = 'all' );						
+						break;
+					case 'eicons':
+						wp_enqueue_style( 'adminz_eicons',plugin_dir_url(ADMINZ_BASENAME).'assets/eicons/all.min.css', array(), '5.11.0', $media = 'all' );
+						break;
+				}
 			}
-			@font-face {
-			  font-family: Lato;
-			  font-style: italic;
-			  src: url(<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/font/Lato-Italic.ttf'; ?>);
-			}
-			@font-face {
-			  font-family: Lato;
-			  font-weight: 100;
-			  src: url(<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/font/Lato-Thin.ttf'; ?>);
-			}
-			@font-face {
-			  font-family: Lato;
-			  font-weight: 700;
-			  src: url(<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/font/Lato-Bold.ttf'; ?>);
-			}
-			@font-face {
-			  font-family: Lato;
-			  font-weight: 800;
-			  src: url(<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/font/Lato-Black.ttf'; ?>);
-			}
-			@font-face {
-			  font-family: Lato;
-			  font-weight: 900;
-			  src: url(<?php echo plugin_dir_url(ADMINZ_BASENAME).'assets/font/Lato-Heavy.ttf'; ?>);
-			}
-			*,
-			body,
-			.nav > li > a ,
-			.mobile-sidebar-levels-2 .nav > li > ul > li > a,
-			h1,h2,h3,h4,h5,h6,.heading-font, .off-canvas-center .nav-sidebar.nav-vertical > li > a {
-				font-family: Lato;
-			}
- 		</style>
- 		<?php
- 		}
- 		$buffer = ob_get_clean();
- 		echo str_replace(array("\r\n", "\r", "\n", "\t", '  ', '    ', '    '), '', $buffer);
- 	}
- 	function enqueue_registed_scripts(){
- 		$option = (array)get_option('adminz_enqueue_js_');
+		}
+	}
+	function adminz_enqueue_styles(){
+		$option = (array)get_option('adminz_enqueue_registed_css_');		
  		if(!empty($option) and is_array($option)){ 			
  			foreach ($option as $key => $value) {
- 				wp_enqueue_script($value);	
+ 				wp_enqueue_style($value);
+ 			} 			
+ 		}
+	}
+ 	function adminz_enqueue_scripts(){
+ 		wp_register_script( 'adminz_flickity_js', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/flickity.pkgd.min.js', array('jquery'),null,true );
+ 		wp_register_script( 'adminz_fotorama_js', plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/fotorama.js', array( 'jquery' ),null,true );
+ 		$adminz_supported_js = (array)get_option( 'adminz_supported_js' );
+ 		if(!empty($adminz_supported_js) and is_array($adminz_supported_js)){
+ 			foreach ($adminz_supported_js as $key => $value) {
+ 				switch ($value) {
+ 					case 'flickity':
+ 						wp_enqueue_script( 'adminz_flickity_js');
+ 						break;
+ 					case 'fotorama':
+ 						wp_enqueue_script( 'adminz_fotorama_js');
+ 						break;
+ 				}
+ 			}
+ 		}
+ 		$option = (array)get_option('adminz_enqueue_registed_js_');
+ 		if(!empty($option) and is_array($option)){ 			
+ 			foreach ($option as $key => $value) {
+ 				wp_enqueue_script($value);
  			} 			
  		}
  	}
  	function register_option_setting() {
 		register_setting( $this->options_group, 'adminz_fonts_uploaded' );
 		register_setting( $this->options_group, 'adminz_custom_css_fonts' );
+		register_setting( $this->options_group, 'adminz_supported_font' );
 		register_setting( $this->options_group, 'adminz_choose_font_lato' );
-		register_setting( $this->options_group, 'adminz_enqueue_js_' );
+		register_setting( $this->options_group, 'adminz_enqueue_registed_js_' );
+		register_setting( $this->options_group, 'adminz_enqueue_registed_css_' );
+		register_setting( $this->options_group, 'adminz_supported_js' );
+
 	}
  }

@@ -43,6 +43,11 @@ For more details you can send mail with your suggestions, recommendation to quyl
 
 == Changelog ==
 
+= 1.6 =
+* New: Wordpress Javascript library supported
+* New: fotorama and flickity shortcode
+* New: Some JS and css font libray supported
+
 = 1.5 = 
 * Auto update is default settings when active plugins
 * New: tool custom font 

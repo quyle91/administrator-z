@@ -2,11 +2,12 @@
 use Adminz\Admin\Adminz as Adminz;
 
 function adminz_enqueue_fotorama() {
-   	wp_register_script( 'adminz_fotorama_js', plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/fotorama.js', array( 'jquery' ) );
 	wp_register_style( 'adminz_fotorama_css', plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/fotorama.css');
+	wp_register_style( 'adminz_fotorama_fix_css', plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/fotorama_fix.css');
+   	wp_register_script( 'adminz_fotorama_js', plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/fotorama.js', array( 'jquery' ) );
 	wp_register_script( 'adminz_fotorama_config' , plugin_dir_url(ADMINZ_BASENAME).'assets/fotorama/adminz_fotorama_config.js', array('jquery'));
 }
-add_action( 'wp_enqueue_scripts', 'adminz_enqueue_fotorama' );
+add_action( 'wp_enqueue_scripts', 'adminz_enqueue_fotorama',101 );
 
 add_action('ux_builder_setup', 'adminz_fotorama');
 add_shortcode('adminz_fotorama', 'adminz_fotorama_function');
@@ -221,8 +222,9 @@ function adminz_fotorama(){
     ));
 }
 function adminz_fotorama_function($atts){
-	wp_enqueue_script( 'adminz_fotorama_js');
 	wp_enqueue_style( 'adminz_fotorama_css');
+	wp_enqueue_style( 'adminz_fotorama_fix_css');
+	wp_enqueue_script( 'adminz_fotorama_js');	
 	wp_enqueue_script( 'adminz_fotorama_config');
 	$adminz = new Adminz;
 	$map = shortcode_atts(array(
