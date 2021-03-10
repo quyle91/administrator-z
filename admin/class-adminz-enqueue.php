@@ -210,50 +210,26 @@ class ADMINZ_Enqueue extends Adminz {
 	            	<td>
 	            		<textarea style="width: 100%; background: #f2f2f2; border: 3px solid gray;" rows="10" name="adminz_custom_css_fonts" placeholder="Your custom css here..."><?php echo get_option('adminz_custom_css_fonts',''); ?></textarea>
 	            	</td>
-	            </tr>	
-	            <tr valign="top">
-					<th scope="row">
-						<h3>CSS Libraries</h3>
-					</th>
-				</tr>  
-				<tr valign="top">
-					<th scope="row">
-						Wordpress Registered
-					</th>
-					<td>
-						<?php 
-						foreach ($GLOBALS['wp_styles']->registered as $handle => $obj) {
-							$option = (array)get_option('adminz_enqueue_registed_css_');
-							$checked = in_array($handle,$option)? 'checked' : "" ;
-							$link = $obj->src.'<a target="blank" href="'.$obj->src.'"></a>';
-							ob_start();
-							echo "<p>handle:</p>";
-							echo '<code>'; print_r($obj->handle); echo '</code>'; 
-							echo "<p>src:</p>";
-							echo '<code>'; print_r($obj->src); echo '</code>'; 
-							echo "<p>deps:</p>";
-							echo '<code>'; print_r($obj->deps); echo '</code>'; 
-							echo "<p>ver:</p>";
-							echo '<code>'; print_r($obj->ver); echo '</code>'; 
-							echo "<p>args:</p>";
-							echo '<code>'; print_r($obj->args); echo '</code>'; 
-							//print_r($obj->extra);
-							echo "<p>textdomain:</p>";
-							echo '<code>'; print_r($obj->textdomain); echo '</code>'; 
-							echo "<p>translations_path:</p>";
-							echo '<code>'; print_r($obj->translations_path); echo '</code>'; 
-							$objhtml = ob_get_clean();
-							echo '<label><input class="adminz_enqueue_registed_css_" type="checkbox" name="adminz_enqueue_registed_css_[]" value="'.$handle.'" '.$checked.' /> '.$handle.'<code>'.$link.'</code></label><button class="show_js_data" type="button" style="border: none; cursor: pointer;">...</button></br>';
-							echo "<div class='more_info hidden'><pre>";echo $objhtml; echo "</pre></div>";
-						}
-						 ?>
-					</td>
-				</tr>            
+	            </tr>
 	            <tr valign="top">
 					<th scope="row">
 						<h3>JS Libraries</h3>
 					</th>
 				</tr> 
+				<tr valign="top">
+	                <th scope="row">Upload your JS library files</th>
+	                <td>
+						<em>Coming soon!</em>
+	                </td>
+	            </tr>
+	            <tr valign="top">
+	            	<th scope="row">
+	            		JS uploaded
+	            	</th>
+	            	<td>
+	            		<em>Coming soon!</em>
+	            	</td>	            	
+	            </tr>
 				<tr valign="top">
 					<th scope="row">
 						JS supported
@@ -302,7 +278,45 @@ class ADMINZ_Enqueue extends Adminz {
 						?>
 	                	<p><em>https://developer.wordpress.org/reference/functions/wp_enqueue_script/</em></p> 
                 	</td>
-	            </tr>           
+	            </tr>  
+	            <tr valign="top">
+					<th scope="row">
+						<h3>CSS Libraries</h3>
+					</th>
+				</tr>  
+				<tr valign="top">
+					<th scope="row">
+						Wordpress Registered
+					</th>
+					<td>
+						<?php 
+						foreach ($GLOBALS['wp_styles']->registered as $handle => $obj) {
+							$option = (array)get_option('adminz_enqueue_registed_css_');
+							$checked = in_array($handle,$option)? 'checked' : "" ;
+							$link = $obj->src.'<a target="blank" href="'.$obj->src.'"></a>';
+							ob_start();
+							echo "<p>handle:</p>";
+							echo '<code>'; print_r($obj->handle); echo '</code>'; 
+							echo "<p>src:</p>";
+							echo '<code>'; print_r($obj->src); echo '</code>'; 
+							echo "<p>deps:</p>";
+							echo '<code>'; print_r($obj->deps); echo '</code>'; 
+							echo "<p>ver:</p>";
+							echo '<code>'; print_r($obj->ver); echo '</code>'; 
+							echo "<p>args:</p>";
+							echo '<code>'; print_r($obj->args); echo '</code>'; 
+							//print_r($obj->extra);
+							echo "<p>textdomain:</p>";
+							echo '<code>'; print_r($obj->textdomain); echo '</code>'; 
+							echo "<p>translations_path:</p>";
+							echo '<code>'; print_r($obj->translations_path); echo '</code>'; 
+							$objhtml = ob_get_clean();
+							echo '<label><input class="adminz_enqueue_registed_css_" type="checkbox" name="adminz_enqueue_registed_css_[]" value="'.$handle.'" '.$checked.' /> '.$handle.'<code>'.$link.'</code></label><button class="show_js_data" type="button" style="border: none; cursor: pointer;">...</button></br>';
+							echo "<div class='more_info hidden'><pre>";echo $objhtml; echo "</pre></div>";
+						}
+						 ?>
+					</td>
+				</tr>            
  			</table>		
 	        <?php echo submit_button(); ?>
 	    </form>

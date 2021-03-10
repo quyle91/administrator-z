@@ -1,17 +1,42 @@
 <?php 
 use Adminz\Admin\Adminz as Adminz;
-function adminz_enqueue_flickity() {
+
+add_action( 'wp_enqueue_scripts', function () {
    	wp_register_style( 'adminz_fix_flickity_css', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/custom_flickity.css');
    	wp_register_style( 'adminz_flickity_css', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/flickity.min.css');
    	wp_register_script( 'adminz_flickity_config' , plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/adminz_flickity_config.js', array('adminz_flickity_js'));
 	wp_register_script( 'adminz_flickity_js', plugin_dir_url(ADMINZ_BASENAME).'assets/flickity/flickity.pkgd.min.js', array('jquery'));
-	
-}
-add_action( 'wp_enqueue_scripts', 'adminz_enqueue_flickity',101 );
+},101 );
 
-add_action('ux_builder_setup', 'adminz_flickity');
-add_shortcode('adminz_flickity', 'adminz_flickity_function');
-function adminz_flickity(){
+$flickity_attributes = [
+	'draggable'=> ['heading'=>'draggable', 'type'=>'textfield' , 'jsvar'=>'draggable', 'default'=> 'true'],
+	'freescroll'=> ['heading'=>'freeScroll', 'type'=>'textfield' , 'jsvar'=>'freeScroll', 'default'=> 'false'],
+	'contain'=> ['heading'=>'contain', 'type'=>'textfield' , 'jsvar'=>'contain', 'default'=> 'true'],
+	'wraparound'=> ['heading'=>'wrapAround', 'type'=>'textfield' , 'jsvar'=>'wrapAround', 'default'=> 'true'],
+	'groupcells'=> ['heading'=>'groupCells', 'type'=>'textfield' , 'jsvar'=>'groupCells', 'default'=> 'false'],
+	'autoplay'=> ['heading'=>'autoPlay', 'type'=>'textfield' , 'jsvar'=>'autoPlay', 'default'=> 'false'],
+	'pauseautoplayonhover'=> ['heading'=>'pauseAutoPlayOnHover', 'type'=>'textfield' , 'jsvar'=>'pauseAutoPlayOnHover', 'default'=> 'false'],
+	'adaptiveheight'=> ['heading'=>'adaptiveHeight', 'type'=>'textfield' , 'jsvar'=>'adaptiveHeight', 'default'=> 'true'],
+	'whatcss'=> ['heading'=>'whatCSS', 'type'=>'textfield' , 'jsvar'=>'whatCSS', 'default'=> 'false'],
+	'asnavfor'=> ['heading'=>'asNavFor', 'type'=>'textfield' , 'jsvar'=>'asNavFor', 'default'=> ""],
+	'selectedattraction'=> ['heading'=>'selectedAttraction', 'type'=>'textfield' , 'jsvar'=>'selectedAttraction', 'default'=> '0.025'],
+	'friction'=> ['heading'=>'friction', 'type'=>'textfield' , 'jsvar'=>'friction', 'default'=> '0.28'],
+	'imagesloaded'=> ['heading'=>'imagesLoaded', 'type'=>'textfield' , 'jsvar'=>'imagesLoaded', 'default'=> 'true'],
+	'lazyload'=> ['heading'=>'lazyLoad', 'type'=>'textfield' , 'jsvar'=>'lazyLoad', 'default'=> 'true'],
+	'cellselector'=> ['heading'=>'cellSelector', 'type'=>'textfield' , 'jsvar'=>'cellSelector', 'default'=> ''],
+	'initialindex'=> ['heading'=>'initialIndex', 'type'=>'textfield' , 'jsvar'=>'initialIndex', 'default'=> '3'],
+	'accessibility'=> ['heading'=>'accessibility', 'type'=>'textfield' , 'jsvar'=>'accessibility', 'default'=> 'true'],
+	'setgallerysize'=> ['heading'=>'setGallerySize', 'type'=>'textfield' , 'jsvar'=>'setGallerySize', 'default'=> 'true'],
+	'resize'=> ['heading'=>'resize', 'type'=>'textfield' , 'jsvar'=>'resize', 'default'=> 'true'],
+	'cellalign'=> ['heading'=>'cellAlign', 'type'=>'textfield' , 'jsvar'=>'cellAlign', 'default'=> 'left'],
+	'percentposition'=> ['heading'=>'percentPosition', 'type'=>'textfield' , 'jsvar'=>'percentPosition', 'default'=> 'false'],
+	'righttoleft'=> ['heading'=>'rightToLeft', 'type'=>'textfield' , 'jsvar'=>'rightToLeft', 'default'=> 'false'],
+	'prevnextbuttons'=> ['heading'=>'prevNextButtons', 'type'=>'textfield' , 'jsvar'=>'prevNextButtons', 'default'=> 'true'],
+	'pagedots'=> ['heading'=>'pageDots', 'type'=>'textfield' , 'jsvar'=>'pageDots', 'default'=> 'false'],
+	'arrowshape'=> ['heading'=>'arrowShape', 'type'=>'textfield' , 'jsvar'=>'arrowShape', 'default'=> ''],
+];
+
+add_action('ux_builder_setup', function () use($flickity_attributes) {
 	$adminz = new Adminz;
 	add_ux_builder_shortcode('adminz_flickity', array(
 		'info' => '{{ heading }}',
@@ -47,205 +72,95 @@ function adminz_flickity(){
 				'type'=>'group',
 				'heading'=> 'JS Document',
 				'description'=> "https://flickity.metafizzy.co/options.html",
-				'options' => array(
-				    'draggable'=> array(
-						'type'=>'textfield',
-						'heading'=> 'draggable'
-					),
-			        'freeScroll'=> array(
-			        	'type'=>'textfield',
-			        	'heading'=> 'freeScroll'
-			        ),
-			        'contain'=> array(
-			        	'type'=>'textfield',
-			        	'heading'=> 'contain'
-			        ),
-		 			'wrapAround'=> array(
-			        	'type'=>'textfield',
-			        	'heading'=> 'wrapAround'
-			        ),
-			        'groupCells'=> array(
-			        	'type'=>'textfield',
-			        	'heading'=> 'groupCells'
-			        ),
-			        'autoPlay'=> array(
-			        	'type'=>'textfield',
-			        	'heading'=> 'autoPlay'
-			        ),
-			        'pauseAutoPlayOnHover'=> array(
-			        	'type'=>'textfield',
-			        	'heading'=> 'pauseAutoPlayOnHover'
-			        ),
-			        'adaptiveHeight'=> array(
-			        	'type'=>'textfield',
-			        	'heading'=> 'adaptiveHeight'
-			        ),
-			        'asNavFor'=> array(
-			        	'type'=>'textfield',
-			        	'heading'=> 'asNavFor'
-			        ),
-			        'selectedAttraction'=> array(
-			        	'type'=>'textfield',
-			        	'heading'=> 'selectedAttraction'
-			        ),
-					'friction'=> array(
-						'type'=>'textfield',
-						'heading'=> 'friction'
-					),
-					'imagesLoaded'=> array(
-			        	'type'=>'textfield',
-			        	'heading'=> 'imagesLoaded'
-			        ),
-					'lazyLoad'=> array(
-						'type'=>'textfield',
-						'heading'=> 'lazyLoad'
-					),
-					'cellSelector'=> array(
-						'type'=>'textfield',
-						'heading'=> 'cellSelector'
-					),
-					'initialIndex'=> array(
-						'type'=>'textfield',
-						'heading'=> 'initialIndex'
-					),
-					'accessibility'=> array(
-						'type'=>'textfield',
-						'heading'=> 'accessibility'
-					),
-					'setGallerySize'=> array(
-						'type'=>'textfield',
-						'heading'=> 'setGallerySize'
-					),
-					'resize'=> array(
-						'type'=>'textfield',
-						'heading'=> 'resize'
-					),
-					'cellAlign'=> array(
-						'type'=>'textfield',
-						'heading'=> 'cellAlign'
-					),
-					'percentPosition'=> array(
-						'type'=>'textfield',
-						'heading'=> 'percentPosition'
-					),
-					'rightToLeft'=> array(
-						'type'=>'textfield',
-						'heading'=> 'rightToLeft'
-					),
-					'prevNextButtons'=> array(
-						'type'=>'textfield',
-						'heading'=> 'prevNextButtons'
-					),
-					'pageDots'=> array(
-						'type'=>'textfield',
-						'heading'=> 'pageDots'
-					),
-					'arrowShape'=> array(
-						'type'=>'textfield',
-						'heading'=> 'arrowShape'
-					),
-			  	),
+				'options' => $flickity_attributes
 			),			
         ),
     ));
-}
-function adminz_flickity_function($atts){	
-	wp_enqueue_style( 'adminz_fix_flickity_css');
+});
+
+add_shortcode('adminz_flickity', function ($atts) use($flickity_attributes){
 	wp_enqueue_script( 'adminz_flickity_config');
 	if(!in_array('Flatsome', [wp_get_theme()->name, wp_get_theme()->parent_theme])){		
 		wp_enqueue_style( 'adminz_flickity_css');
-		wp_enqueue_script( 'adminz_flickity_js');
 	}
 	$adminz = new Adminz;
-	$map = shortcode_atts(array(
-        'ids'    => '',
+	$mapdefault = [		
+		'ids'    => '',
         'usethumbnails'=>true,
         'thumbnailscol' => 4,
-        // slider args
-        'draggable'=> 'true', 
-        'freeScroll'=> 'false',
-        'contain'=> 'true',
-        'imagesLoaded' => 'true',
-        'wrapAround'=> 'true',
-        'groupCells'=> 'false',
-        'autoPlay'=> 'false',
-        'pauseAutoPlayOnHover'=> 'false',        
-        'adaptiveHeight'=> 'true',
-        'asNavFor'=> '.adminz_flickity',
-        'selectedAttraction'=> '0.025',
-		'friction'=> '0.28',
-		'lazyLoad'=> 'false',
-		'cellSelector'=> '',
-		'initialIndex'=> '0',
-		'accessibility'=> 'true',
-		'setGallerySize'=> 'true',
-		'resize'=> 'true',
-		'cellAlign'=> 'left',
-		'percentPosition'=> 'false',
-		'rightToLeft'=> 'false',
-		'prevNextButtons'=> 'true',
-		'pageDots'=> 'false',
-		'arrowShape'=> '',
-		/*'watchCSS'=> 'true'*/
-    ), $atts);    
+	];
+	foreach ($flickity_attributes as $key => $value) {
+		$mapdefault[$key] = $value['default'];
+	}
+	$map = shortcode_atts($mapdefault, $atts);	
+	$randomclass = "adminz_flickity".wp_rand();
+	$map['asnavfor'] = ".".$randomclass;
 	extract($map);		
     ob_start();    
-    $data_flickity = [];
+    $data_flickity = [];    
     foreach ($map as $key => $value) {
     	if($value){
     		if(!($value == 'true' or $value == 'false' or is_bool($value))){
     			$value = '"'.$value.'"';
-			}
-			$data_flickity[]='"'.$key.'":'.$value.'';			
+			}			
+			$jskey = isset($flickity_attributes[$key]['jsvar']) ?  $flickity_attributes[$key]['jsvar'] : $key;
+			$data_flickity[]='"'.$jskey.'":'.$value.'';
     	}
     }
-    ?>    
-    <div class="adminz_flickity slider mb-half" data-adminz='{<?php echo implode(",", $data_flickity ); ?>}'>
+    ?> 
+    <style type="text/css">
+		.<?php echo $randomclass; ?>:not(.flickity-enabled){
+			-js-display: flex; display: -webkit-box; display: -ms-flexbox; -webkit-box-orient: horizontal; -webkit-box-direction: normal; -ms-flex-flow: row wrap; flex-flow: row wrap; white-space: nowrap; overflow-y: hidden; overflow-x: hidden; width: auto;
+		}
+		.<?php echo $randomclass; ?>:not(.flickity-enabled)>.col{
+			display: inline-block;
+		}
+	</style>   
+    <div class="adminz_flickity slider mb-half <?php echo $randomclass; ?>" data-adminz='{<?php echo implode(",", $data_flickity ); ?>}' >
 	  <?php 
 		$idss = explode(',', $ids);
-		if(!empty($idss) and is_array($idss)){
+		if($ids and is_array($idss) and !empty($idss) ){
 			foreach ($idss as $id) {
-				$src = wp_get_attachment_image_src( $id, 'full',false );
-				if($src){
-					echo '<img src="'.$src[0].'"/>';
-				}  				
+				?>
+					<img src="<?php echo wp_get_attachment_image_src($id,'full')[0]; ?>">
+				<?php		
 			}
 		}
 		?>
 	</div>
-	<?php if($usethumbnails){ ?>	
-		<?php 
-		$map['wrapAround'] = 'false';
-		$data_flickity2 = [];
-		foreach ($map as $key => $value) {
-	    	if($value){
-	    		if(!($value == 'true' or $value == 'false' or is_bool($value))){
-	    			$value = '"'.$value.'"';
-				}			
-	    		$data_flickity2[]='"'.$key.'":'.$value.'';
-	    	}
-	    }
-		?>	
-		<div class="adminz_flickity slider product-thumbnails row" data-adminz='{<?php echo implode(",", $data_flickity2 ); ?>}'>
-		  <?php 
-			$idss = explode(',', $ids);
-			if(!empty($idss) and is_array($idss)){
-				foreach ($idss as $key=> $id) {
-					$src = wp_get_attachment_image_src( $id, array(100,100),false );
-					if($src){
-						?>
-						<div class="col" style="width: <?php echo (100/$thumbnailscol); ?>% !important;">
-							<a>
-								<img src="<?php echo $src[0]; ?> "/>
-							</a>
-						</div>
-						<?php 
-					}	  				
-	 			}
-			}
-			?>
-		</div>
-	<?php } ?>
-	<?php
+	<!-- thumbnails -->
+	<?php if($usethumbnails){		
+	$data_flickity2 = [];
+	$map['contain'] = "true";
+	$map['wrapAround'] = "false";
+	$map['pagedots'] = 'false';
+	foreach ($map as $key => $value) {
+    	if($value){
+    		if(!($value == 'true' or $value == 'false' or is_bool($value))){
+    			$value = '"'.$value.'"';
+			}			
+    		$jskey = isset($flickity_attributes[$key]['jsvar']) ?  $flickity_attributes[$key]['jsvar'] : $key;
+			$data_flickity2[]='"'.$jskey.'":'.$value.'';
+    	}
+    }
+	?>	
+	<div class="adminz_flickity slider product-thumbnails row <?php echo $randomclass; ?>" data-adminz='{<?php echo implode(",", $data_flickity2 ); ?>}'>
+	  <?php 
+		$idss = explode(',', $ids);
+		if($ids and is_array($idss) and !empty($idss) ){
+			foreach ($idss as $key=> $id) {
+				?>
+				<div class="col" style="width: <?php echo (100/$thumbnailscol); ?>% !important;">
+					<a href="javascript:void(0);">
+					<?php echo wp_get_attachment_image($id,'thumbnail',false); ?>
+					</a>
+				</div>
+				<?php				
+ 			}
+		}
+		?>
+	</div>	
+	<?php }
     return ob_get_clean();
-}
+});
+
