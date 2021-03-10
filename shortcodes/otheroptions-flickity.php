@@ -58,13 +58,13 @@ add_action('ux_builder_setup', function () use($flickity_attributes) {
 			'usethumbnails'=>array(
                 'type' => 'checkbox',
                 'heading'   =>'Use small thumbnails',
-                'default' => 'true'
+                'default' => 'false'
             ),
             'thumbnailscol'=> array(
 				'type'=>'slider',
 				'min'=> 1,
 				'max'=> 24,
-				'default'=>4,
+				'default'=>1,
 				'heading'=> 'Thumbnails columns'
 			),
 			// js library document link 
@@ -86,15 +86,15 @@ add_shortcode('adminz_flickity', function ($atts) use($flickity_attributes){
 	$adminz = new Adminz;
 	$mapdefault = [		
 		'ids'    => '',
-        'usethumbnails'=>true,
-        'thumbnailscol' => 4,
+        'usethumbnails'=>false,
+        'thumbnailscol' => 1,
 	];
 	foreach ($flickity_attributes as $key => $value) {
 		$mapdefault[$key] = $value['default'];
 	}
-	$map = shortcode_atts($mapdefault, $atts);	
+	$map = shortcode_atts($mapdefault, $atts);		
 	$randomclass = "adminz_flickity".wp_rand();
-	$map['asnavfor'] = ".".$randomclass;
+	$map['asnavfor'] = $map['asnavfor']? $map['asnavfor'] : ".".$randomclass;
 	extract($map);		
     ob_start();    
     $data_flickity = [];    
@@ -116,13 +116,18 @@ add_shortcode('adminz_flickity', function ($atts) use($flickity_attributes){
 			display: inline-block;
 		}
 	</style>   
-    <div class="adminz_flickity slider mb-half <?php echo $randomclass; ?>" data-adminz='{<?php echo implode(",", $data_flickity ); ?>}' >
+    <div class="adminz_flickity slider mb-half <?php echo $randomclass; ?> row" data-adminz='{<?php echo implode(",", $data_flickity ); ?>}' >
 	  <?php 
 		$idss = explode(',', $ids);
 		if($ids and is_array($idss) and !empty($idss) ){
 			foreach ($idss as $id) {
+				$bigcol = $usethumbnails ? 1 : $thumbnailscol;
 				?>
-					<img src="<?php echo wp_get_attachment_image_src($id,'full')[0]; ?>">
+				<div class="col" style="width: <?php echo (100/$bigcol); ?>% !important;">
+					<a href="javascript:void(0);">
+					<?php echo wp_get_attachment_image($id,'full',false); ?>
+					</a>
+				</div>
 				<?php		
 			}
 		}
@@ -132,7 +137,7 @@ add_shortcode('adminz_flickity', function ($atts) use($flickity_attributes){
 	<?php if($usethumbnails){		
 	$data_flickity2 = [];
 	$map['contain'] = "true";
-	$map['wrapAround'] = "false";
+	//$map['wrapAround'] = "false";
 	$map['pagedots'] = 'false';
 	foreach ($map as $key => $value) {
     	if($value){
