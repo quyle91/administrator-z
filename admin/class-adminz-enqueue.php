@@ -9,7 +9,7 @@ class ADMINZ_Enqueue extends Adminz {
 	function __construct() {		
 		add_filter( 'adminz_setting_tab', [$this,'register_tab']);
 		add_action(	'admin_init', [$this,'register_option_setting'] );		
-		add_action( 'wp_enqueue_scripts', [$this,'enqueue_custom_font'],101);
+		add_action( 'wp_head', [$this,'enqueue_custom_font'],101); // for important new style
 		add_action( 'wp_enqueue_scripts', [$this,'adminz_enqueue_scripts'] );
 		add_action( 'wp_enqueue_scripts', [$this,'adminz_enqueue_styles'] );
 		add_action( 'wp_ajax_adminz_f_font_upload', [$this,'font_upload_callback']);	
