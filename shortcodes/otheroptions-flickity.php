@@ -24,7 +24,7 @@ $flickity_attributes = [
 	'imagesloaded'=> ['heading'=>'imagesLoaded', 'type'=>'textfield' , 'jsvar'=>'imagesLoaded', 'default'=> 'true'],
 	'lazyload'=> ['heading'=>'lazyLoad', 'type'=>'textfield' , 'jsvar'=>'lazyLoad', 'default'=> 'true'],
 	'cellselector'=> ['heading'=>'cellSelector', 'type'=>'textfield' , 'jsvar'=>'cellSelector', 'default'=> ''],
-	'initialindex'=> ['heading'=>'initialIndex', 'type'=>'textfield' , 'jsvar'=>'initialIndex', 'default'=> '3'],
+	'initialindex'=> ['heading'=>'initialIndex', 'type'=>'textfield' , 'jsvar'=>'initialIndex', 'default'=> '0'],
 	'accessibility'=> ['heading'=>'accessibility', 'type'=>'textfield' , 'jsvar'=>'accessibility', 'default'=> 'true'],
 	'setgallerysize'=> ['heading'=>'setGallerySize', 'type'=>'textfield' , 'jsvar'=>'setGallerySize', 'default'=> 'true'],
 	'resize'=> ['heading'=>'resize', 'type'=>'textfield' , 'jsvar'=>'resize', 'default'=> 'true'],
@@ -137,7 +137,7 @@ add_shortcode('adminz_flickity', function ($atts) use($flickity_attributes){
 	<?php if($usethumbnails){		
 	$data_flickity2 = [];
 	$map['contain'] = "true";
-	//$map['wrapAround'] = "false";
+	$map['wrapAround'] = "false";
 	$map['pagedots'] = 'false';
 	foreach ($map as $key => $value) {
     	if($value){
