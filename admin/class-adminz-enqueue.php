@@ -479,6 +479,7 @@ class ADMINZ_Enqueue extends Adminz {
 			jQuery(function($) {								
 				function fill_data_fields_font(){
 					var data_fonts = $('textarea[name="adminz_fonts_uploaded"]').val();
+					if(!data_fonts) return;
 					data_fonts = JSON.parse(data_fonts);
 					if( data_fonts.length){
 						for (var i = 0; i < data_fonts.length; i++) {
@@ -516,6 +517,7 @@ class ADMINZ_Enqueue extends Adminz {
 				}
 				function fill_data_fields_js(){
 					var data_js = $('textarea[name="adminz_js_uploaded"]').val();
+					if(!data_js) return;
 					data_js = JSON.parse(data_js);
 					if( data_js.length){
 						for (var i = 0; i < data_js.length; i++) {

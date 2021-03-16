@@ -1,15 +1,15 @@
 === Administrator Z ===
 Contributors: quyle91
-Tags: auto-update, contact group button, import data, replace image, custom font, import javascript
+Tags: auto-update, contact group button, import data, replace image, font, javascript
 Donate link: http://paypal.me/quyle91
-Requires at least: 4.0
-Tested up to: 5.6
+Requires at least: 5.0
+Tested up to: 5.7
 Requires PHP: 5.6
 Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Description: Some selected functions that are commonly used to support building websites quickly: some shortcodes integrated on UX Builder - Flatsome and Elementor, automatic updates, shutting down xmlrpc.php, contact button groups, input support.
+Some selected functions that are commonly used to support building websites quickly: some shortcodes integrated on UX Builder - Flatsome and Elementor, automatic updates, shutting down xmlrpc.php, contact button groups, input support.
 
 == Description ==
 
@@ -25,7 +25,7 @@ Feature functions:
 7. Some Elementor widget are added
 8. Tool Import post/ product content from external url
 9. Tool Replace image keep ID & URL
-10. Tool Add custom fonts
+10. Enqueue custom fonts/ Custom javascript
 
 Setting page plugin: Tool->Administrator Z
 
